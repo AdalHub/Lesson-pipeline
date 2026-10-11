@@ -18,3 +18,33 @@ Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 - **`timestamptz` for `createdAt` columns** (spec says `timestamp`); with-timezone is the safer default for a hosted DB.
 - **Column names are snake_case in SQL, camelCase in TypeScript** (Drizzle's explicit column-name mapping).
 - **`drizzle.config.ts` loads `.env.local` via dotenv** because drizzle-kit does not read Next's env files on its own.
+
+## Milestone 3 — tRPC
+
+- **Classic `createTRPCReact` + `httpBatchLink` with superjson**, provider mounted in the root layout. Server components get a caller from `createCallerFactory` with a React-cached context (`src/trpc/server.ts`).
+- **`health` also pings the DB** (`select now()`), so a green health check proves the DB connection, not just the route.
+- **`lesson.getById` takes the submission id**, not a lesson id, and returns the latest classification and lesson as nullable fields. The submission row always exists, so a page can show partial state after a mid-pipeline failure.
+- **`lesson.list` cursor is the last item's submission id**, paginating on `(createdAt, id)` so ties are stable.
+- **`maxDuration = 120`** on the tRPC route handler so Vercel gives the two sequential AI calls enough time.
+
+## Milestone 4 — classification
+
+- **gpt-4.1 is the default classification model.** Measured on the sample set: gpt-4.1-mini split 3/3 between grade 2 and 3 on an equal-groups question and invented TEKS descriptions; gpt-5-mini returned `teksStandard: "unknown"` for everything, split on grade, took 5-8 s per call, and ignores `temperature`. gpt-4.1 with the changes below gave the same grade in 5/5 runs for all five questions.
+- **A hand-written TEKS anchor table and grade-boundary rules are in the system prompt** (`src/server/ai/teks.ts`). Math is covered in detail because that is where boundary flips happened (grade 1/2 addition ranges, grade 2/3 equal groups, grade 8/Algebra I). Only codes I am confident in are listed; keep it short rather than complete.
+- **Three parallel samples at temperature 0, majority vote on grade, then most common TEKS code.** OpenAI is not deterministic at temperature 0, so voting removes residual flips. Latency is unchanged (parallel) and every sample is stored in `rawResponse` for audit. `AI_CLASSIFY_SAMPLES=1` disables it.
+- **The TEKS code's grade overrides `gradeLevel` when they disagree** (`reconcileGrade`), with confidence lowered a notch. This is the spec's own rule ("report the grade that standard belongs to") applied deterministically. `P.*` is not reconciled because Physics and Precalculus share the prefix.
+- **`generateObject` is kept even though AI SDK 7 deprecates it** in favour of `generateText` + `Output`. The spec requires it and it works; the SDK logs one deprecation warning per process.
+- **Smoke scripts run with `node --env-file=.env.local --import tsx`** so `.env.local` is loaded before any module reads `process.env`.
+
+## Milestone 5 — generation
+
+- **Lessons use gpt-4.1 too, at temperature 0.7.** Quality over cost; both calls can be pointed at different models with `AI_CLASSIFY_MODEL` / `AI_GENERATE_MODEL`.
+- **Plain-text math in lessons, no LaTeX**, because the renderer is react-markdown without a math plugin.
+- **The worked example and practice problems must be new problems**, not the original question; otherwise the model tends to just solve the input.
+- **For screenshot submissions, call 2 receives the image as well as the classification.** The classification schema is fixed by the spec and has no transcription field, so the image is the only way to give the lesson writer the question text.
+
+## Milestone 6 — pipeline
+
+- **Each stage persists before the next starts, with no wrapping transaction.** Partial persistence is the requirement: a failed generation keeps the submission and classification rows.
+- **AI failures become `TRPCError` INTERNAL_SERVER_ERROR with `data.pipeline = { stage, submissionId }`** via the error formatter, using a `PipelineError` cause. The client can link to the submission page after a failure.
+- **Screenshots are stored as base64 data URLs in `submissions.image_url`.** No blob storage is configured and the spec is a demo; the cap is 6M characters (~4.5 MB) to stay under Vercel's request body limit. Swap for Vercel Blob or S3 if this ever leaves demo scope.

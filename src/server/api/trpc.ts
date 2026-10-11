@@ -2,6 +2,7 @@ import { initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { db } from '@/server/db';
+import { PipelineError } from './pipeline-error';
 
 /**
  * Context available to every procedure. No auth in this project (SPEC §12),
@@ -21,6 +22,13 @@ const t = initTRPC.context<Context>().create({
       data: {
         ...shape.data,
         zodError: error.cause instanceof ZodError ? error.cause.issues : null,
+        pipeline:
+          error.cause instanceof PipelineError
+            ? {
+                stage: error.cause.stage,
+                submissionId: error.cause.submissionId,
+              }
+            : null,
       },
     };
   },

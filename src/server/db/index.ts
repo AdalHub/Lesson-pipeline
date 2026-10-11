@@ -21,5 +21,6 @@ if (process.env.NODE_ENV !== 'production') {
   globalForDb.__lessonPipelinePool = pool;
 }
 
+export { pool };
 export const db = drizzle(pool, { schema });
 export type Db = typeof db;
