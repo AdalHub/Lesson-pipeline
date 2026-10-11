@@ -16,6 +16,8 @@ const IMAGE_DATA_URL = /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/
 
 export const GenerateInputSchema = z
   .object({
+    /** Optional client-generated id so the client can poll progress while the mutation runs. */
+    submissionId: z.uuid().optional(),
     inputType: z.enum(['text', 'image']),
     text: z.string().trim().min(1).max(10_000).optional(),
     imageDataUrl: z
@@ -69,6 +71,7 @@ export const lessonRouter = router({
       const [submission] = await ctx.db
         .insert(submissions)
         .values({
+          ...(input.submissionId ? { id: input.submissionId } : {}),
           inputType: input.inputType,
           rawText: question.kind === 'text' ? question.text : null,
           imageUrl: question.kind === 'image' ? question.imageDataUrl : null,

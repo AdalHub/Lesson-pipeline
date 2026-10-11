@@ -48,3 +48,13 @@ Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 - **Each stage persists before the next starts, with no wrapping transaction.** Partial persistence is the requirement: a failed generation keeps the submission and classification rows.
 - **AI failures become `TRPCError` INTERNAL_SERVER_ERROR with `data.pipeline = { stage, submissionId }`** via the error formatter, using a `PipelineError` cause. The client can link to the submission page after a failure.
 - **Screenshots are stored as base64 data URLs in `submissions.image_url`.** No blob storage is configured and the spec is a demo; the cap is 6M characters (~4.5 MB) to stay under Vercel's request body limit. Swap for Vercel Blob or S3 if this ever leaves demo scope.
+
+## Milestone 7 — frontend
+
+- **Paper.design was a blocker; the screens are hand-built Tailwind.** Paper's MCP requires the Paper Desktop app installed and running with a file open (it serves the MCP from the desktop process and the install is a one-click "Add to Claude" in its GUI or an interactive plugin install). Paper Desktop is not installed on this machine, there is no account, and this session is non-interactive, so installing and authorizing a desktop app was out of reach. Per SPEC §8, the three screens were built directly: warm "paper" palette, Tailwind v4 theme tokens in `globals.css`, `@tailwindcss/typography` for the Markdown explanation, light and dark via `prefers-color-scheme`.
+- **Stage indicator is real, not a timer.** The client generates the submission id (`crypto.randomUUID()`), passes it as an optional `submissionId` on `lesson.generate`, and polls `lesson.getById` every 1.5 s while the mutation is pending. Once a classification row exists, stage 2 is shown as active. No streaming, no extra endpoint.
+- **Paste-to-upload listens on `window`**, so pasting a screenshot works anywhere on the page, not only with the textarea focused.
+- **Images over 1.5 MB are downscaled client-side** (longest side 1600 px, JPEG 0.85) before upload to stay under the data-URL cap; smaller files are sent as-is to preserve text legibility.
+- **Practice answers and hints use native `<details>`**, so they are hidden by default without client JS.
+- **History is a server component with a `?cursor=` link** for older pages instead of client-side infinite scroll; invalid cursors are ignored rather than erroring.
+- **Lesson and history pages are `force-dynamic`** (they read the DB on every request); the tRPC caller reads request headers, which would make them dynamic anyway.

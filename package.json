@@ -13,7 +13,8 @@
     "smoke:classify": "node --env-file=.env.local --import tsx scripts/classify-smoke.ts",
     "smoke:generate": "node --env-file=.env.local --import tsx scripts/generate-smoke.ts",
     "smoke:pipeline": "node --env-file=.env.local --import tsx scripts/pipeline-smoke.ts",
-    "smoke:determinism": "node --env-file=.env.local --import tsx scripts/determinism-check.ts"
+    "smoke:determinism": "node --env-file=.env.local --import tsx scripts/determinism-check.ts",
+    "smoke:ui": "node --env-file=.env.local --import tsx scripts/ui-smoke.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.91",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.20",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
@@ -44,6 +46,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "15.5.27",
+    "playwright-core": "^1.64.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
