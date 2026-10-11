@@ -1,5 +1,6 @@
 import { generateObject, type UserContent } from 'ai';
 import { CLASSIFY_MODEL_ID, getModel } from './model';
+import { imageFilePart } from './parts';
 import { ClassificationSchema, type Classification } from './schemas';
 import { TEKS_ANCHORS, gradeFromTeksCode } from './teks';
 
@@ -55,7 +56,7 @@ function buildUserContent(input: ClassifyInput): UserContent {
       type: 'text',
       text: 'Classify the test question shown in this screenshot. Read it carefully first.',
     },
-    { type: 'image', image: input.imageDataUrl },
+    imageFilePart(input.imageDataUrl),
   ];
 }
 

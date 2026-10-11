@@ -1,5 +1,6 @@
 import { generateObject, type UserContent } from 'ai';
 import { GENERATE_MODEL_ID, getModel } from './model';
+import { imageFilePart } from './parts';
 import { LessonSchema, type Classification, type Lesson } from './schemas';
 
 export const GENERATE_SYSTEM = `
@@ -74,7 +75,7 @@ function buildUserContent(input: GenerateInput): UserContent {
       type: 'text',
       text: `Question: (shown in the attached screenshot)\n\n${meta}\n\nWrite the lesson.`,
     },
-    { type: 'image', image: input.question.imageDataUrl },
+    imageFilePart(input.question.imageDataUrl),
   ];
 }
 

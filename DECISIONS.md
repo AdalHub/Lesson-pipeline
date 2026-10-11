@@ -58,3 +58,9 @@ Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 - **Practice answers and hints use native `<details>`**, so they are hidden by default without client JS.
 - **History is a server component with a `?cursor=` link** for older pages instead of client-side infinite scroll; invalid cursors are ignored rather than erroring.
 - **Lesson and history pages are `force-dynamic`** (they read the DB on every request); the tRPC caller reads request headers, which would make them dynamic anyway.
+
+## Milestone 8 — image input
+
+- **Screenshots go to both AI calls as a `file` part with the media type parsed from the data URL** (`src/server/ai/parts.ts`). AI SDK 7 deprecates the `image` part; `file` with `mediaType: image/*` is the supported form and worked identically in testing (a rendered worksheet PNG classified as grade 6, TEKS 6.7A, with a full lesson).
+- **The "real screenshot" for verification is produced by the UI smoke script itself**: it renders a worksheet-style HTML question in headless Chrome and screenshots it to PNG, then uploads that file through the real file input and also injects it through a synthetic clipboard paste event. No hand-made fixture image is committed.
+- **Progress polling starts 1.2 s after submit** so the first `getById` lands after the submission row exists; previously the first poll returned a 404 that showed up in the browser console. The tRPC route also stops logging NOT_FOUND / BAD_REQUEST, since those are client-side conditions.

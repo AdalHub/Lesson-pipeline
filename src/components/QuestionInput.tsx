@@ -56,6 +56,7 @@ export function QuestionInput() {
   const [image, setImage] = useState<{ dataUrl: string; name: string } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [pollEnabled, setPollEnabled] = useState(false);
   const [error, setError] = useState<{ message: string; submissionId?: string } | null>(null);
 
   const generate = api.lesson.generate.useMutation({
@@ -69,11 +70,12 @@ export function QuestionInput() {
   });
 
   // While the mutation runs, poll the submission to learn which stage is live:
-  // once a classification row exists, call 2 is running.
+  // once a classification row exists, call 2 is running. Polling starts after a
+  // short delay so the first request lands after the submission row is inserted.
   const progress = api.lesson.getById.useQuery(
     { id: submissionId ?? '' },
     {
-      enabled: generate.isPending && !!submissionId,
+      enabled: generate.isPending && pollEnabled && !!submissionId,
       refetchInterval: 1500,
       retry: false,
     },
@@ -120,6 +122,8 @@ export function QuestionInput() {
     setError(null);
     const id = crypto.randomUUID();
     setSubmissionId(id);
+    setPollEnabled(false);
+    window.setTimeout(() => setPollEnabled(true), 1200);
     if (image) {
       generate.mutate({ submissionId: id, inputType: 'image', imageDataUrl: image.dataUrl });
     } else {

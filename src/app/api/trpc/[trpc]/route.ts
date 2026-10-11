@@ -12,6 +12,8 @@ const handler = (req: Request) =>
     router: appRouter,
     createContext: () => createTRPCContext({ headers: req.headers }),
     onError: ({ path, error }) => {
+      // Client-side mistakes (bad input, unknown id) are not server errors.
+      if (error.code === 'NOT_FOUND' || error.code === 'BAD_REQUEST') return;
       console.error(`[trpc] ${path ?? '<no-path>'}: ${error.message}`);
     },
   });
