@@ -6,7 +6,14 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "smoke:classify": "node --env-file=.env.local --import tsx scripts/classify-smoke.ts",
+    "smoke:generate": "node --env-file=.env.local --import tsx scripts/generate-smoke.ts",
+    "smoke:pipeline": "node --env-file=.env.local --import tsx scripts/pipeline-smoke.ts",
+    "smoke:determinism": "node --env-file=.env.local --import tsx scripts/determinism-check.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.91",
