@@ -113,6 +113,12 @@ export default async function LessonPage({
             <p className="text-3xl font-extrabold tracking-[-0.03em]">
               {ordinal(classification.gradeLevel)} grade
             </p>
+            <p className="text-xs font-semibold">
+              Estimated alignment · {classification.gradeLevelConfidence} confidence
+            </p>
+            {classification.teksStandard === 'unknown' && (
+              <p className="text-sm">No defensible match in the current TEKS catalog. Review this estimate.</p>
+            )}
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full border border-foreground bg-card px-3 py-1.5 text-xs font-bold">
                 {SUBJECT_LABELS[classification.subject] ?? humanize(classification.subject)}
@@ -230,8 +236,9 @@ function GroundingEvidence({ grounding }: { grounding: Grounding | null }) {
         Grounded classification
       </p>
       <p>
-        Retrieved {grounding.candidateCount} database candidates, then constrained the
-        model to the selected record{grounding.webSources.length ? ' with official web evidence' : ''}.
+        Retrieved {grounding.candidateCount} database candidates.
+        {grounding.selectedSourceUrl ? ' The model selected a verified record.' : ' No verified record was selected.'}
+        {grounding.webSources.length ? ' Official web evidence was also consulted.' : ''}
       </p>
       {links.length > 0 && (
         <p>

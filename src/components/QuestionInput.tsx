@@ -43,7 +43,9 @@ async function downscale(dataUrl: string): Promise<string> {
 
 async function prepareImage(file: Blob): Promise<string> {
   const dataUrl = await readAsDataUrl(file);
-  return file.size > DOWNSCALE_ABOVE_BYTES ? downscale(dataUrl) : dataUrl;
+  const prepared = file.size > DOWNSCALE_ABOVE_BYTES ? await downscale(dataUrl) : dataUrl;
+  if (prepared.length > 4_000_000) throw new Error('Image is too large; crop it to the question and try again.');
+  return prepared;
 }
 
 type Stage = 'classify' | 'generate';
@@ -87,7 +89,7 @@ export function QuestionInput() {
       : 'classify';
 
   const handleFile = useCallback(async (file: Blob, name = 'pasted image') => {
-    if (!file.type.startsWith('image/')) {
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
       setError({ message: 'Please choose an image file (PNG, JPEG, WebP or GIF).' });
       return;
     }
@@ -133,6 +135,9 @@ export function QuestionInput() {
 
   return (
     <div className="space-y-4">
+      <p className="text-sm leading-6 text-muted">
+        Public demo: questions and lessons appear in shared History. Please do not upload personal or student information.
+      </p>
       <section
         className={`overflow-hidden rounded-[18px] border-2 bg-card transition-colors ${
           dragOver ? 'border-accent bg-accent-soft/30' : 'border-foreground'
@@ -183,6 +188,7 @@ export function QuestionInput() {
           ) : (
             <div className="relative min-h-[170px] rounded-xl border border-border bg-background">
               <textarea
+                aria-label="Test question"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 disabled={generate.isPending}
@@ -230,7 +236,7 @@ export function QuestionInput() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,image/gif"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

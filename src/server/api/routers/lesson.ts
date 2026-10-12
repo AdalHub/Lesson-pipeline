@@ -3,14 +3,15 @@ import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { classify, type ClassifyResult } from '@/server/ai/classify';
 import { generateLesson, type GenerateResult } from '@/server/ai/generate';
+import { ClassificationSchema, LessonSchema } from '@/server/ai/schemas';
 import { classifications, lessons, submissions } from '@/server/db/schema';
 import { PipelineError, type PipelineStage } from '../pipeline-error';
 import { publicProcedure, router } from '../trpc';
 
 const PREVIEW_LENGTH = 140;
 
-/** Max accepted data URL length (~6 MB of base64, under Vercel's body limit). */
-const MAX_IMAGE_DATA_URL_LENGTH = 6_000_000;
+/** Leave JSON overhead below Vercel's 4.5 MB request limit. */
+const MAX_IMAGE_DATA_URL_LENGTH = 4_000_000;
 
 const IMAGE_DATA_URL = /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
 
@@ -22,7 +23,7 @@ export const GenerateInputSchema = z
     text: z.string().trim().min(1).max(10_000).optional(),
     imageDataUrl: z
       .string()
-      .max(MAX_IMAGE_DATA_URL_LENGTH, 'Image is too large (max ~4 MB)')
+      .max(MAX_IMAGE_DATA_URL_LENGTH, 'Image is too large; use a smaller screenshot (under 3 MB)')
       .regex(IMAGE_DATA_URL, 'Expected a base64 PNG, JPEG, WebP or GIF data URL')
       .optional(),
   })
@@ -53,7 +54,8 @@ function failStage(stage: PipelineStage, submissionId: string, cause: unknown) {
   });
 }
 
-export const lessonRouter = router({
+export function createLessonRouter(providers = { classify, generateLesson }) {
+return router({
   /**
    * The pipeline: insert submission -> classify -> insert classification
    * -> generate (with the classification as input) -> insert lesson.
@@ -87,7 +89,8 @@ export const lessonRouter = router({
       // CALL 1 — classify
       let classified: ClassifyResult;
       try {
-        classified = await classify(question);
+        classified = await providers.classify(question);
+        classified.classification = ClassificationSchema.parse(classified.classification);
       } catch (err) {
         throw failStage('classify', submission.id, err);
       }
@@ -122,7 +125,8 @@ export const lessonRouter = router({
       // CALL 2 — generate, with call 1's output as explicit input
       let generated: GenerateResult;
       try {
-        generated = await generateLesson({ question, classification: c });
+        generated = await providers.generateLesson({ question, classification: c });
+        generated.lesson = LessonSchema.parse(generated.lesson);
       } catch (err) {
         throw failStage('generate', submission.id, err);
       }
@@ -260,3 +264,6 @@ export const lessonRouter = router({
       };
     }),
 });
+}
+
+export const lessonRouter = createLessonRouter();

@@ -12,6 +12,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import assert from 'node:assert/strict';
 import { chromium, type Page } from 'playwright-core';
 
 const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';
@@ -19,12 +20,12 @@ const outDir = path.resolve(process.argv[2] ?? 'screenshots');
 fs.mkdirSync(outDir, { recursive: true });
 
 const GRADE2 =
-  'Jamal has 34 stickers. His sister gives him 25 more stickers. How many stickers does Jamal have now?';
-const GRADE10 = 'Write the equation of a circle with center (3, -2) and radius 5.';
+  'Nora has 47 library cards. Her class makes 28 more. How many library cards do they have in all?';
+const GRADE10 = 'Write the equation of a circle with center (-4, 2) and radius 6.';
 
 const WORKSHEET_HTML = `<!doctype html><html><body style="margin:0;background:#fff">
 <div id="q" style="width:720px;padding:28px 36px;font-family:Georgia,serif;color:#111;background:#fff">
-  <div style="font:bold 13px Arial;color:#555;letter-spacing:.08em">GRADE 6 MATHEMATICS &nbsp;·&nbsp; UNIT 3 QUIZ</div>
+  <div style="font:bold 13px Arial;color:#555;letter-spacing:.08em">MATHEMATICS &nbsp;·&nbsp; PRACTICE QUESTION</div>
   <div style="margin-top:14px;font-size:20px"><b>7.</b> Evaluate the expression.</div>
   <div style="margin:14px 0 18px 28px;font-size:26px">3 + 2<sup style="font-size:15px">3</sup> × (10 − 4) ÷ 4</div>
   <div style="margin-left:28px;font-size:19px;line-height:1.8">
@@ -36,9 +37,9 @@ const shot = (page: Page, name: string, fullPage = true) =>
   page.screenshot({ path: path.join(outDir, name), fullPage });
 
 async function readBadges(page: Page) {
-  const grade = await page.locator('span', { hasText: /\d+(st|nd|rd|th) grade/ }).first().textContent();
+  const grade = await page.locator('p', { hasText: /^\d+(st|nd|rd|th) grade$/ }).first().textContent();
   const teks = await page.locator('span', { hasText: /^TEKS / }).first().textContent();
-  const conf = await page.locator('span', { hasText: /confidence$/ }).first().textContent();
+  const conf = await page.getByText(/Estimated alignment/).first().textContent();
   const title = await page.locator('h1').first().textContent();
   return { grade: grade?.trim(), teks: teks?.trim(), confidence: conf?.trim(), title: title?.trim() };
 }
@@ -61,14 +62,15 @@ async function submitAndWait(page: Page) {
     console.log('  stage 2 not observed before navigation');
   }
   await page.waitForURL(/\/lessons\/[0-9a-f-]{36}$/, { timeout: 180_000 });
-  await page.getByText('Objective:').waitFor();
+  await page.getByRole('heading', { name: 'How it works' }).waitFor();
   return { url: page.url(), sawStage2 };
 }
 
 async function main() {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-  page.on('pageerror', (e) => console.log('  [pageerror]', e.message));
+  const pageErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(e.message));
   page.on('console', (m) => {
     if (m.type() === 'error') console.log('  [console.error]', m.text());
   });
@@ -81,9 +83,14 @@ async function main() {
   const text = await submitAndWait(page);
   await shot(page, '2-lesson-grade2.png');
   console.log('  url:', text.url);
-  console.log('  badges:', await readBadges(page));
+  const badges = await readBadges(page);
+  console.log('  badges:', badges);
+  assert.equal(badges.grade, '2nd grade');
+  assert.equal(badges.teks, 'TEKS 2.4C');
   console.log('  open <details> on load:', await page.locator('details[open]').count());
-  await page.getByText('Show answer').first().click();
+  assert.equal(await page.locator('details[open]').count(), 0);
+  await page.getByText('Reveal answer').first().click();
+  assert.equal(await page.locator('details[open]').count(), 1);
   console.log('  open <details> after click:', await page.locator('details[open]').count());
 
   // 2. History
@@ -92,11 +99,13 @@ async function main() {
   await shot(page, '3-history.png');
   const items = await page.locator('main ul > li').count();
   console.log('  items on first page:', items);
-  const firstTitle = await page.locator('main ul > li a p').first().textContent();
-  await page.locator('main ul > li a').first().click();
+  assert(items > 0);
+  const ownHistoryLink = page.locator(`main a[href="${new URL(text.url).pathname}"]`);
+  const firstTitle = await ownHistoryLink.textContent();
+  await ownHistoryLink.click();
   await page.waitForURL(/\/lessons\/[0-9a-f-]{36}$/);
   console.log('  clicked:', firstTitle?.trim(), '->', page.url());
-  await page.getByText('Objective:').waitFor();
+  await page.getByRole('heading', { name: 'How it works' }).waitFor();
 
   // 3. Real screenshot -> upload via file picker
   console.log('3. image submission via file picker');
@@ -114,7 +123,10 @@ async function main() {
   const image = await submitAndWait(page);
   await shot(page, '5-lesson-image.png');
   console.log('  url:', image.url);
-  console.log('  badges:', await readBadges(page));
+  const imageBadges = await readBadges(page);
+  console.log('  badges:', imageBadges);
+  assert.equal(imageBadges.grade, '6th grade');
+  assert.equal(imageBadges.teks, 'TEKS 6.7A');
   console.log(
     '  submitted screenshot shown on lesson page:',
     await page.locator('img[alt="Submitted question screenshot"]').count(),
@@ -142,7 +154,16 @@ async function main() {
   const g10 = await submitAndWait(page);
   await shot(page, '7-lesson-grade10.png');
   console.log('  url:', g10.url);
-  console.log('  badges:', await readBadges(page));
+  const upperBadges = await readBadges(page);
+  console.log('  badges:', upperBadges);
+  assert.equal(upperBadges.teks, 'TEKS G.12E');
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const route of ['/', '/lessons', new URL(g10.url).pathname]) {
+    await page.goto(baseUrl + route);
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Mobile overflow on ${route}`);
+  }
+  await shot(page, '8-mobile-lesson.png');
+  assert.deepEqual(pageErrors, []);
 
   await browser.close();
   console.log(`\nscreenshots in ${outDir}`);

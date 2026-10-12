@@ -62,12 +62,16 @@ export async function planTeksRetrieval(
 ) {
   const started = performance.now();
   const result = await generateObject({
+    abortSignal: AbortSignal.timeout(20_000),
+    maxRetries: 1,
     model: getModel(modelId),
     schema: RetrievalPlanSchema,
     schemaName: 'TeksRetrievalPlan',
     schemaDescription: 'Search plan for finding relevant Texas TEKS standards.',
     instructions: `You prepare K-12 test questions for standards retrieval. Transcribe the
-question accurately, identify the skill without solving it, and produce concise
+question accurately INCLUDING its full passage, diagrams' relevant content, and
+all answer choices; never omit the evidence needed to judge complexity. Identify
+the skill without solving it, and produce concise
 search terms that resemble curriculum/standards language. For multiple-choice
 items, classify the cognitive distinction required to separate the correct
 answer from the plausible distractors—not merely the topic illustrated by the
@@ -109,6 +113,8 @@ export async function researchOfficialTeks(
   const started = performance.now();
   try {
     const result = await generateText({
+      abortSignal: AbortSignal.timeout(30_000),
+      maxRetries: 0,
       model: getResponsesModel(modelId),
       tools: {
         web_search: openai.tools.webSearch({
@@ -197,15 +203,23 @@ export async function retrieveTeksCandidates(
   limit = 10,
 ): Promise<RetrievedTeks[]> {
   const rows = await db.select().from(teksStandards);
+  return rankTeksCandidates(rows, plan, research, limit);
+}
+
+/** Pure ranking function, tested without a network or AI provider. */
+export function rankTeksCandidates(
+  rows: TeksStandardRow[], plan: RetrievalPlan, research: WebResearch, limit = 10,
+): RetrievedTeks[] {
   const queryTokens = tokens(
-    [plan.normalizedQuestion, plan.skill, ...plan.searchTerms, research.text].join(' '),
+    [plan.normalizedQuestion, plan.skill, ...plan.searchTerms].join(' '),
   );
   const mentionedCodes = new Set(
-    (research.text.match(/\b(?:[A-Z0-9]{1,4}\.)?\d{1,2}[A-Z]\b/gi) ?? [])
-      .map((code) => code.toUpperCase()),
+    (research.text.match(/\b[A-Z0-9]{1,4}\.\d{1,2}[.\s(]*[A-Z]\)?/gi) ?? [])
+      .map((code) => code.toUpperCase().replace(/(\.\d+)[.\s(]+([A-Z])\)?$/, '$1$2')),
   );
 
   return rows
+    .filter((row) => row.subject === plan.subject)
     .map((row) => {
       const rowTokens = tokens(`${row.searchText} ${row.studentExpectation} ${row.description}`);
       let score = 0;

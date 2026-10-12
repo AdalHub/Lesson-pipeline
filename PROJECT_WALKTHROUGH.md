@@ -4,13 +4,13 @@ This is the code-level map to learn before presenting the project. Start with th
 
 ## The 90-second explanation
 
-The browser accepts exactly one input: question text or a screenshot. The React client sends that input through a typed tRPC mutation to a Next.js route handler. The server immediately inserts a `submissions` row, then makes two separate structured AI calls.
+The browser accepts exactly one input: question text or a screenshot. The React client sends that input through a typed tRPC mutation to a Next.js route handler. The server immediately inserts a `submissions` row, then runs two separate AI stages (classification internally uses several provider requests).
 
 Stage 1 classifies the question against TEKS using retrieval rather than model recall. A structured planning operation reads/OCRs the question and produces standards-language search terms. OpenAI's hosted web-search tool checks official TEA/TAC sources. The app retrieves ten candidate standards from the Neon `teks_standards` table, and three parallel structured selections may copy only one retrieved `subject:code` key or return `unknown`. Grade, subject, and description are then hydrated from that database row—not from model prose—and the validated samples are voted.
 
 The classification is persisted before Call 2 begins. Call 2 receives the original question plus the complete classification as explicit input and returns another Zod-validated object: a grade-appropriate lesson with an objective, explanation, worked example, mistakes, and practice. That lesson is persisted separately. This three-table shape makes failures diagnosable and preserves partial work.
 
-Next.js provides the React UI, server-rendered lesson/history pages, and the `/api/trpc` HTTP route. tRPC gives the browser a type-safe client for server procedures; Zod performs runtime validation; Drizzle maps TypeScript objects to SQL; `pg` maintains the Postgres connection pool. Locally, `DATABASE_URL` points to Postgres on port 5432. In production, it points to Neon Postgres connected to the Vercel project.
+Next.js provides the React UI, server-rendered lesson/history pages, and the `/api/trpc` HTTP route. tRPC gives the browser a type-safe client for server procedures; Zod performs runtime validation; Drizzle maps TypeScript objects to SQL; `pg` maintains the Postgres connection pool. `DATABASE_URL` selects the database: the current local configuration and production both use Neon, while automated integration tests explicitly use a separate local Postgres database.
 
 ## End-to-end data flow
 
@@ -146,7 +146,7 @@ The initial database corpus is curated around the highest-value math pathways an
 
 ### Could categorization be faster?
 
-Yes, but do not replace a measured, working classifier hours before delivery merely because another model is branded “Flash.” The current wall time is already about seven seconds, and the three classification samples run concurrently.
+Do not replace a measured classifier hours before delivery merely because another model is branded “Flash.” The original prompt-only pipeline took about seven seconds; the current retrieval/web-grounded pipeline makes additional requests and takes longer. Measure the deployed version using the live smoke checks. Three final selection samples run concurrently.
 
 The app now uses the strongest speed/quality hybrid:
 

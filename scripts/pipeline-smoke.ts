@@ -7,6 +7,7 @@
  *   AI_CLASSIFY_MODEL=no-such-model node --env-file=.env.local --import tsx scripts/pipeline-smoke.ts fail
  */
 import { TRPCError } from '@trpc/server';
+import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { createCaller } from '../src/server/api/root';
 import { PipelineError } from '../src/server/api/pipeline-error';
@@ -52,6 +53,15 @@ async function showRows(submissionId: string) {
     .from(lessons)
     .where(eq(lessons.submissionId, submissionId));
 
+  assert(sub, 'Submission must survive');
+  assert.equal(cls.length, mode === 'fail' ? 0 : 1);
+  assert.equal(lsn.length, mode === 'fail' ? 0 : 1);
+  if (mode !== 'fail') {
+    assert.equal(lsn[0].classificationId, cls[0].id);
+    assert(cls[0].model && lsn[0].model);
+    assert(cls[0].latencyMs >= 0 && lsn[0].latencyMs >= 0);
+  }
+
   console.log('\n--- submissions row ---');
   console.log(JSON.stringify(sub, null, 2));
   console.log(`\n--- classifications rows (${cls.length}) ---`);
@@ -68,18 +78,19 @@ async function main() {
   if (mode === 'fail') {
     try {
       await api.lesson.generate({ inputType: 'text', text: q.text });
-      console.log('UNEXPECTED: generate succeeded');
+      assert.fail('Expected classification failure; use an invalid AI_CLASSIFY_MODEL');
     } catch (err) {
       if (!(err instanceof TRPCError)) throw err;
       console.log('\n--- typed error ---');
       console.log(`code: ${err.code}`);
       console.log(`message: ${err.message}`);
       if (err.cause instanceof PipelineError) {
+        assert.equal(err.cause.stage, 'classify');
         console.log(`stage: ${err.cause.stage}`);
         console.log(`submissionId: ${err.cause.submissionId}`);
         await showRows(err.cause.submissionId);
       } else {
-        console.log('cause is not a PipelineError:', err.cause);
+        throw new Error('Expected a stage-aware PipelineError');
       }
     }
     return;

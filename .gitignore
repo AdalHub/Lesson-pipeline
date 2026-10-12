@@ -43,6 +43,8 @@ next-env.d.ts
 
 # local screenshots from scripts/ui-smoke.ts
 /screenshots
+/tmp/
+/backups/
 
 .vercel
 .env*

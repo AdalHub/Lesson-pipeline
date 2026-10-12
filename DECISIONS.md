@@ -2,6 +2,10 @@
 
 Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 
+**Current readiness audit:** see `READINESS.md`. Historical prototype notes below
+do not describe every current implementation detail (especially Paper, catalog
+coverage, request count, latency and upload size).
+
 ## Milestone 1 — scaffold
 
 - **Repo root is the working directory, not a subfolder.** `create-next-app` refuses the directory name "Adal Marisol" (npm naming rules), so the app was scaffolded into a temp subfolder and moved up. The package name is `lesson-pipeline`.
@@ -85,3 +89,15 @@ Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 - **The initial corpus is intentionally curated rather than falsely claiming completeness.** It covers high-value math pathways plus verified science expectations. Unsupported skills return `unknown`; the next ingestion job should load every current and superseded standard from TEA.
 - **Grounding corrected the evaluation itself.** The old smoke fixture labelled physical-versus-chemical change as grade 5. Official TEA progression places the explicit distinction at grade 7, current TEKS `7.6C`; the corpus and expected test label were corrected.
 - **Multiple-choice retrieval uses the distractor distinction, not just the correct option.** A live production test initially collapsed “physical vs. chemical change” to the correct option's narrower topic (“ice melting,” `3.6C`). The planner, web researcher, and selector now explicitly classify the cognitive distinction required to reject all distractors. The same item then selected `7.6C` unanimously in 3/3 samples.
+
+## Milestone 11 — reproducible validation and broader coverage
+
+- **593 published expectations imported, not generated.** ELAR and social-studies grades 1–5 were extracted programmatically from current TEA chapter PDFs, with source hashes and a committed JSON snapshot. Import is transactional and idempotent; existing math/science records remain. Scope/exclusions are in `data/README.md`.
+- **Real assertions replace “looks successful” as the acceptance bar.** Offline unit tests cover input/structured output, retrieval code normalization, subject isolation, hydration, voting and ambiguity. Isolated Postgres tests inject deterministic provider results into the real tRPC router and assert persistence, both failure stages, invalid data, NOT_FOUND and cursor ties. Public-URL smoke tests additionally exercise real OpenAI, web evidence, HTTP transport and browser interactions. These layers measure different things; mocks do not prove AI accuracy.
+- **No production DB in ordinary tests.** The test launcher refuses non-local integration URLs and clears the OpenAI key for test processes. CI configuration has a disposable Postgres service. There is no Git remote yet, so hosted CI has not run.
+- **Candidate enum is constrained at generation time.** Zod's enum is built from retrieved keys plus `unknown`; hydration revalidates it. Code spelling variants such as `2.4.C` and `2.4(C)` now normalize for retrieval. Ranking filters by planned subject, preventing same-code collisions across subjects. This also makes planner subject errors a known failure mode; `unknown` is preferable to inventing a match.
+- **Search isn't ground truth.** A live reading check found that the web memo misidentified a section and favored adult-assisted grade-1 inference, despite independent grade-2–5 candidates. The planner now retains the entire passage/options, the selector is instructed not to invent adult assistance, and web prose no longer adds lexical ranking noise. Repeated expectations across grades force low confidence in application code. This is a regression safeguard, not proof of calibrated confidence or perfect classification.
+- **Bounded runtime/cost.** Sampling is clamped to 1–5; partial failures or voting ties reduce confidence. Planner/search/selection/generation have 20/30/20/40-second deadlines respectively; search timeout falls back to local retrieval. The request can still fail, and saved partial rows make the failure inspectable.
+- **Upload cap corrected.** The old 6-million-character claim was wrong for Vercel's request limit. Both UI and API now cap the data URL at 4 million characters, leaving JSON overhead. Unsupported image formats are rejected before submission.
+- **Honest UI.** Grade is an estimated alignment, confidence is visible, unknown standards do not claim a selected record, and the upload form warns that history is public/shared.
+- **Recoverable demo replacement.** Old submissions and both output tables are archived in ignored JSON before deleting only their exact IDs. Restore is supported; records created after the snapshot are preserved. Backups, env files and downloaded PDF scratch files are explicitly excluded from Vercel uploads.

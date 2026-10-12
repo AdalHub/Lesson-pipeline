@@ -87,6 +87,8 @@ export async function generateLesson(
   const started = performance.now();
 
   const result = await generateObject({
+    abortSignal: AbortSignal.timeout(40_000),
+    maxRetries: 1,
     model: getModel(modelId),
     schema: LessonSchema,
     schemaName: 'Lesson',

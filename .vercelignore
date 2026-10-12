@@ -1,0 +1,7 @@
+.git
+.agents
+.env*
+backups
+tmp
+screenshots
+node_modules
