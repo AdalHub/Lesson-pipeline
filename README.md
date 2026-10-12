@@ -68,13 +68,22 @@ AI_CLASSIFY_MODEL=no-such-model node --env-file=.env.local --import tsx scripts/
 
 ## Deploying to Vercel
 
-1. Create a Neon project and copy its pooled connection string.
+1. Create a Neon project and connect it to the Vercel project. Use the pooled
+   `DATABASE_URL` for application traffic and `DATABASE_URL_UNPOOLED` for
+   Drizzle migrations.
 2. `vercel login`, then `vercel link` in this directory.
 3. Set `DATABASE_URL` and `OPENAI_API_KEY` in the Vercel project (`vercel env add`).
-4. Run the migration against Neon once: `DATABASE_URL=<neon url> npx drizzle-kit migrate`.
+4. Run the migration against Neon once: `npm run db:migrate`.
 5. `vercel --prod`.
 
-**Live URL:** not yet deployed. This machine has no Vercel login and no Neon account, both of which need an interactive sign-in; the steps above are everything that remains.
+**Live URL:** [https://lesson-pipeline.vercel.app](https://lesson-pipeline.vercel.app)
+
+The production deployment was verified through the real UI on October 11,
+2026: grade-2 and grade-10 text questions, a generated worksheet screenshot
+uploaded through the file input, clipboard image paste, history, and lesson
+click-through all passed. Neon contained four complete submission →
+classification → lesson triplets after testing, with no missing `model` or
+`latencyMs` fields.
 
 ## Project layout
 
@@ -88,6 +97,7 @@ src/trpc/                React Query client provider and RSC caller
 drizzle/                 migrations
 scripts/                 smoke tests
 DECISIONS.md             every non-obvious call made while building, with reasons
+PROJECT_WALKTHROUGH.md   code-level architecture and interview guide
 SPEC.md                  the build spec
 ```
 

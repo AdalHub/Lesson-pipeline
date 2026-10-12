@@ -43,3 +43,10 @@ next-env.d.ts
 
 # local screenshots from scripts/ui-smoke.ts
 /screenshots
+
+.vercel
+.env*
+
+# local agent skills installed by the Vercel Neon integration
+/.agents/
+/skills-lock.json

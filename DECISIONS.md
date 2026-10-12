@@ -65,7 +65,12 @@ Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 - **The "real screenshot" for verification is produced by the UI smoke script itself**: it renders a worksheet-style HTML question in headless Chrome and screenshots it to PNG, then uploads that file through the real file input and also injects it through a synthetic clipboard paste event. No hand-made fixture image is committed.
 - **Progress polling starts 1.2 s after submit** so the first `getById` lands after the submission row exists; previously the first poll returned a 404 that showed up in the browser console. The tRPC route also stops logging NOT_FOUND / BAD_REQUEST, since those are client-side conditions.
 
-## Milestone 9 — deploy (blocked)
+## Milestone 9 — deploy
 
-- **Not deployed.** `vercel whoami` reports an invalid token and `vercel login` is an interactive browser/email flow; there is no `VERCEL_TOKEN` in the environment. There is also no Neon account or `NEON_API_KEY`, so no production `DATABASE_URL` exists. Both need the user. Everything else is ready: `npm run build` passes, the app runs on `next start`, the migration is committed, and `README.md` lists the exact five steps (Neon string, `vercel login`/`link`, `vercel env add` for `DATABASE_URL` + `OPENAI_API_KEY`, `drizzle-kit migrate` against Neon, `vercel --prod`).
+- **Deployed to Vercel:** [https://lesson-pipeline.vercel.app](https://lesson-pipeline.vercel.app). The linked project is `adals-projects-42d1862b/lesson-pipeline`.
+- **Neon is provisioned through Vercel Marketplace.** Application traffic uses the pooled `DATABASE_URL`; `drizzle.config.ts` prefers `DATABASE_URL_UNPOOLED` for schema migrations. The committed migration was applied and all three tables were verified directly.
+- **The OpenAI key is a Vercel sensitive secret** for Production, Preview and Development. It was copied from the existing gitignored `.env.local` value and is never printed or committed.
+- **Production smoke testing passed:** grade-2 text → `2.4C`, screenshot upload → grade 6 / `6.7A`, clipboard paste preview, grade-10 text → `G.12E`, history click-through and hidden-answer interaction. A separate equal-groups question classified as grade 3 / `3.4K`.
+- **Production persistence was verified:** four submissions, four classifications and four lessons; zero classification or lesson rows were missing `model` or `latencyMs`.
 - **No `vercel.json` added.** Next.js needs none; the tRPC route's `maxDuration = 120` covers the long request. If the Vercel plan caps function duration below that, lower it or move to streaming.
+- **Vercel Standard Protection is enabled.** The generated deployment URL is authenticated, while the production alias above is public and was verified from a fresh headless browser session.

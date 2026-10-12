@@ -7,13 +7,21 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is not set');
 }
 
+// pg currently treats Neon's sslmode=require as verify-full, but that alias is
+// changing in pg v9. Make the intended certificate + hostname verification
+// explicit now and avoid the runtime security warning.
+const verifiedConnectionString = connectionString.replace(
+  /([?&])sslmode=(?:prefer|require|verify-ca)(?=&|$)/,
+  '$1sslmode=verify-full',
+);
+
 // Reuse the pool across hot reloads in dev so we don't leak connections.
 const globalForDb = globalThis as unknown as { __lessonPipelinePool?: Pool };
 
 const pool =
   globalForDb.__lessonPipelinePool ??
   new Pool({
-    connectionString,
+    connectionString: verifiedConnectionString,
     max: 5,
   });
 
