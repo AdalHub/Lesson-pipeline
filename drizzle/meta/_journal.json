@@ -8,6 +8,20 @@
       "when": 1791750205621,
       "tag": "0000_easy_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791775378936,
+      "tag": "0001_thin_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791775917874,
+      "tag": "0002_last_skreet",
+      "breakpoints": true
     }
   ]
 }

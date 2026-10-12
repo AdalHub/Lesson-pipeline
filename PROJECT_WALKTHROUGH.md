@@ -6,7 +6,7 @@ This is the code-level map to learn before presenting the project. Start with th
 
 The browser accepts exactly one input: question text or a screenshot. The React client sends that input through a typed tRPC mutation to a Next.js route handler. The server immediately inserts a `submissions` row, then makes two separate structured AI calls.
 
-Call 1 classifies the question against TEKS. It returns a Zod-validated object containing grade, subject, TEKS code, question type, difficulty, key concepts, confidence, and a short rationale. To reduce grade flips, the app runs three classification samples in parallel at temperature 0, reconciles the grade with the selected TEKS code, and majority-votes on grade and then TEKS code.
+Stage 1 classifies the question against TEKS using retrieval rather than model recall. A structured planning operation reads/OCRs the question and produces standards-language search terms. OpenAI's hosted web-search tool checks official TEA/TAC sources. The app retrieves ten candidate standards from the Neon `teks_standards` table, and three parallel structured selections may copy only one retrieved `subject:code` key or return `unknown`. Grade, subject, and description are then hydrated from that database row—not from model prose—and the validated samples are voted.
 
 The classification is persisted before Call 2 begins. Call 2 receives the original question plus the complete classification as explicit input and returns another Zod-validated object: a grade-appropriate lesson with an objective, explanation, worked example, mistakes, and practice. That lesson is persisted separately. This three-table shape makes failures diagnosable and preserves partial work.
 
@@ -26,10 +26,12 @@ POST /api/trpc/lesson.generate
           +--> INSERT submissions
           |
           +--> classify(question)
-          |      3 parallel generateObject calls
-          |      ClassificationSchema validates every result
-          |      reconcile TEKS code -> grade
-          |      majority vote
+          |      structured OCR/retrieval plan
+          |      OpenAI web_search (official Texas domains only)
+          |      retrieve 10 rows from teks_standards
+          |      3 parallel constrained candidate selections
+          |      database row -> grade/subject/description
+          |      ClassificationSchema validates + majority vote
           |
           +--> INSERT classifications
           |
@@ -129,29 +131,30 @@ The app produces several related labels:
 - `difficulty`: difficulty relative to the selected grade-level standard.
 - `keyConcepts`: short teacher-facing descriptions of the skills.
 
-The decision process in `src/server/ai/classify.ts` is:
+The decision process in `src/server/ai/classify.ts` and `teks-retrieval.ts` is:
 
-1. Read the text, or send the screenshot directly to the vision-capable model.
-2. Name the exact skill required by the question.
-3. Match that skill to the most specific TEKS expectation the model knows.
-4. Set grade to the grade that owns that TEKS code.
-5. Use `unknown` and low confidence instead of inventing a code.
-6. Run three samples in parallel.
-7. For each sample, if its numeric TEKS code and grade disagree, use the grade encoded by the TEKS code and lower confidence.
-8. Select the majority grade, then the most common TEKS code inside that grade.
+1. Read the text or OCR the screenshot into a faithful normalized question.
+2. Name the tested skill and produce curriculum-language search terms.
+3. Ask OpenAI web search for supporting evidence from official Texas domains only.
+4. Rank records from `teks_standards` using skill overlap, subject, estimated grade, and exact codes mentioned by official-source research.
+5. Give the top ten records to the selector. It may copy one candidate key exactly or return `unknown`; an invented key is rejected by application code.
+6. Hydrate grade, subject, TEKS description, effective version, and source URL from the database record.
+7. Run three constrained selections in parallel and vote on the validated subject/code pair.
+8. Persist the retrieval plan, web citations, candidate scores, all samples, model IDs, and latency for audit.
 
-The compact anchor table in `src/server/ai/teks.ts` is strongest for math. It includes landmark standards and explicit boundary rules, such as grade 2 modelling equal groups versus grade 3 calculating multiplication. For ELAR, science, and social studies, the model relies more heavily on its trained recall. The next quality improvement is a complete, versioned TEKS dataset with retrieval and code validation.
+The initial database corpus is curated around the highest-value math pathways and verified science expectations. It is deliberately honest about gaps: unsupported skills return `unknown` rather than falling back to an invented code. The next data task is bulk ingestion of the complete, versioned TEKS corpus; no classifier redesign is required.
 
 ### Could categorization be faster?
 
 Yes, but do not replace a measured, working classifier hours before delivery merely because another model is branded “Flash.” The current wall time is already about seven seconds, and the three classification samples run concurrently.
 
-The strongest speed/quality design is a hybrid:
+The app now uses the strongest speed/quality hybrid:
 
 1. Determine subject and extract the tested skill.
-2. Retrieve a small set of candidate TEKS rows from a real TEKS corpus using full-text or embedding search.
-3. Ask the model to select only from those candidates.
-4. Validate that the selected code exists and deterministically derive its grade.
+2. Use official-source web research to resolve wording/version ambiguity.
+3. Retrieve a small set of candidate TEKS rows from Postgres.
+4. Ask the model to select only from those candidates.
+5. Validate that the selected key exists and derive grade/subject from its row.
 
 That reduces hallucinated codes, shortens the prompt, and makes a faster model safer. If “JEB” refers to a particular provider, library, or educational standard, confirm the exact name before changing the pipeline; it is not a recognized substitute in the current codebase.
 
@@ -241,7 +244,7 @@ Sending the image to Call 2 matters: the classification schema does not contain 
 
 Paper is a design tool and MCP server, not a package the deployed website imports. “Using Paper” means opening Paper Desktop, creating a design file, connecting Codex through Paper's MCP panel, and using that design artifact to guide implementation.
 
-The working UI is currently hand-built in Tailwind. Paper Desktop was not installed when the UI was created, so this deviation is recorded in `DECISIONS.md`, as allowed by the spec. Installing Paper and producing a three-screen design artifact can strengthen the submission, but it should not replace or destabilize the verified UI before launch. Paper Desktop must be open with a file loaded, and a new Codex chat is required after adding its MCP configuration.
+Paper Desktop was later connected and the three screens were designed in the “Lesson Pipeline UI” Paper file. The approved input, generated-lesson, and history compositions were then implemented in Tailwind while preserving the existing tRPC and pipeline behavior. Paper remains a design artifact; production does not load a Paper runtime or package.
 
 ## Failure behavior
 
@@ -266,7 +269,7 @@ The client uses that ID to show “The submission was saved” and link to the p
 
 ## Honest next steps
 
-1. Import the complete official TEKS corpus and retrieve candidate standards instead of trusting model recall.
+1. Import the complete official TEKS corpus (the retrieval architecture and an initial curated catalog are already live).
 2. Build a labelled evaluation set and track grade accuracy, TEKS-code accuracy, schema failures, latency, and cost per model.
 3. Add auth, rate limits, and abuse/cost controls before sharing broadly.
 4. Store screenshots in Vercel Blob or S3 and keep only their URL in Postgres.

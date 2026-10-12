@@ -49,6 +49,9 @@ export default async function LessonPage({
   }
 
   const { submission, classification, lesson } = data;
+  const grounding = classification
+    ? readGrounding(classification.rawResponse)
+    : null;
 
   if (!classification || !lesson) {
     return (
@@ -73,6 +76,7 @@ export default async function LessonPage({
               questionType={classification.questionType}
             />
             <p className="text-sm text-muted">{classification.teksDescription}</p>
+            <GroundingEvidence grounding={grounding} />
           </section>
         ) : (
           <Notice title="No classification">
@@ -141,6 +145,7 @@ export default async function LessonPage({
               <p>{classification.reasoning}</p>
               <p><span className="font-semibold text-foreground">TEKS: </span>{classification.teksDescription}</p>
               <p><span className="font-semibold text-foreground">Concepts: </span>{classification.keyConcepts.join(', ')}</p>
+              <GroundingEvidence grounding={grounding} />
             </div>
           </details>
         </aside>
@@ -154,6 +159,98 @@ export default async function LessonPage({
         </p>
         <FooterLinks />
       </div>
+    </div>
+  );
+}
+
+type Grounding = {
+  selectedCandidateKey: string | null;
+  webSources: Array<{ url: string; title: string | null }>;
+  selectedSourceUrl: string | null;
+  candidateCount: number;
+};
+
+function readGrounding(value: unknown): Grounding | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, unknown>;
+  if (raw.groundingVersion !== 1) return null;
+
+  const selectedCandidateKey =
+    typeof raw.selectedCandidateKey === 'string' ? raw.selectedCandidateKey : null;
+  const candidates = Array.isArray(raw.retrievedCandidates)
+    ? (raw.retrievedCandidates as Array<Record<string, unknown>>)
+    : [];
+  const selected = candidates.find(
+    (candidate) => candidate.key === selectedCandidateKey,
+  );
+  const webResearch =
+    raw.webResearch && typeof raw.webResearch === 'object'
+      ? (raw.webResearch as Record<string, unknown>)
+      : null;
+  const sources = Array.isArray(webResearch?.sources)
+    ? (webResearch.sources as Array<Record<string, unknown>>)
+        .filter(
+          (source) =>
+            typeof source.url === 'string' &&
+            /^https:\/\/(?:[^/]+\.)?(?:tea\.texas\.gov|texreg\.sos\.state\.tx\.us)(?:\/|$)/i.test(
+              source.url,
+            ),
+        )
+        .map((source) => ({
+          url: source.url as string,
+          title: typeof source.title === 'string' ? source.title : null,
+        }))
+    : [];
+
+  return {
+    selectedCandidateKey,
+    webSources: sources,
+    selectedSourceUrl:
+      typeof selected?.sourceUrl === 'string' ? selected.sourceUrl : null,
+    candidateCount: candidates.length,
+  };
+}
+
+function GroundingEvidence({ grounding }: { grounding: Grounding | null }) {
+  if (!grounding) return null;
+
+  const links = [
+    ...(grounding.selectedSourceUrl
+      ? [{ url: grounding.selectedSourceUrl, title: 'Selected TEKS record' }]
+      : []),
+    ...grounding.webSources,
+  ].filter(
+    (source, index, all) =>
+      all.findIndex((candidate) => candidate.url === source.url) === index,
+  );
+
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <p className="font-semibold text-foreground">
+        Grounded classification
+      </p>
+      <p>
+        Retrieved {grounding.candidateCount} database candidates, then constrained the
+        model to the selected record{grounding.webSources.length ? ' with official web evidence' : ''}.
+      </p>
+      {links.length > 0 && (
+        <p>
+          Sources:{' '}
+          {links.map((source, index) => (
+            <span key={source.url}>
+              {index > 0 && ', '}
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-accent underline underline-offset-2"
+              >
+                {source.title || new URL(source.url).hostname}
+              </a>
+            </span>
+          ))}
+        </p>
+      )}
     </div>
   );
 }

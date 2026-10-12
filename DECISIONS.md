@@ -74,3 +74,13 @@ Routine decisions made while building, per SPEC.md §0. Newest at the bottom.
 - **Production persistence was verified:** four submissions, four classifications and four lessons; zero classification or lesson rows were missing `model` or `latencyMs`.
 - **No `vercel.json` added.** Next.js needs none; the tRPC route's `maxDuration = 120` covers the long request. If the Vercel plan caps function duration below that, lower it or move to streaming.
 - **Vercel Standard Protection is enabled.** The generated deployment URL is authenticated, while the production alias above is public and was verified from a fresh headless browser session.
+
+## Milestone 10 — authoritative TEKS retrieval and web grounding
+
+- **This supersedes the Milestone 4 prompt-anchor implementation.** The old `teks.ts` landmark prompt and `reconcileGrade` path were removed; the recorded Milestone 4 notes remain above as history of the measured prototype.
+- **Classification is now a grounded stage, not a free-form TEKS recall prompt.** A first structured operation transcribes/analyzes the question, OpenAI's provider-hosted `web_search` tool checks official TEA/TAC sources, Postgres retrieves ten plausible standards, and the final structured operation must copy one retrieved `subject:code` key or return `unknown`.
+- **The model never supplies grade, subject, or description for a selected code.** Those fields are hydrated from the chosen `teks_standards` row. A hallucinated or altered candidate key fails closed to `unknown`, so three samples cannot agree on an invented code.
+- **Web search is supporting evidence, not the authority.** It is domain-restricted to `tea.texas.gov` and `texreg.sos.state.tx.us`; URLs and the evidence memo are persisted in `classifications.raw_response` and rendered as clickable sources. A search outage is non-fatal because database retrieval still runs.
+- **Postgres full-text infrastructure, no separate vector database.** The corpus is small enough that deterministic token overlap, subject, estimated grade, and exact web-mentioned codes give useful ranking today. A GIN `to_tsvector` index is present for the complete-corpus ingestion path.
+- **The initial corpus is intentionally curated rather than falsely claiming completeness.** It covers high-value math pathways plus verified science expectations. Unsupported skills return `unknown`; the next ingestion job should load every current and superseded standard from TEA.
+- **Grounding corrected the evaluation itself.** The old smoke fixture labelled physical-versus-chemical change as grade 5. Official TEA progression places the explicit distinction at grade 7, current TEKS `7.6C`; the corpus and expected test label were corrected.

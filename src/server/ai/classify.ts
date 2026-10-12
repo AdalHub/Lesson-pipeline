@@ -1,32 +1,20 @@
 import { generateObject, type UserContent } from 'ai';
+import { z } from 'zod';
 import { CLASSIFY_MODEL_ID, getModel } from './model';
 import { imageFilePart } from './parts';
-import { ClassificationSchema, type Classification } from './schemas';
-import { TEKS_ANCHORS, gradeFromTeksCode } from './teks';
-
-export const CLASSIFY_SYSTEM = `
-You classify K-12 test questions against the Texas Essential Knowledge
-and Skills (TEKS) standards.
-
-Given a question, identify the grade level, subject, and the specific TEKS
-standard it assesses. Anchor every judgment to TEKS — do not guess a grade
-level from general impression. Ask yourself which TEKS standard this
-question is testing, then report the grade that standard belongs to.
-
-If you cannot confidently map it to a TEKS standard, set teksStandard to
-"unknown", give your best grade estimate, and set gradeLevelConfidence to "low".
-Never invent a TEKS code.
-
-Procedure:
-1. In "reasoning", first name the exact skill the question requires (e.g. "equal-groups multiplication", "slope from two points", "identify a physical change").
-2. Name the single TEKS student expectation that most directly assesses that skill, using the landmarks and boundary rules below when they apply.
-3. gradeLevel MUST be the grade of that standard (for high-school course codes, the typical grade for that course). Do not report a different grade from the code.
-4. difficulty is relative to the typical rigor of that standard at that grade.
-5. keyConcepts are 1-5 short noun phrases a teacher would use.
-6. If the question is a screenshot, read the question from the image first, then classify it.
-
-${TEKS_ANCHORS}
-`.trim();
+import {
+  ClassificationSchema,
+  QUESTION_TYPES,
+  type Classification,
+} from './schemas';
+import {
+  planTeksRetrieval,
+  researchOfficialTeks,
+  retrieveTeksCandidates,
+  type RetrievalPlan,
+  type RetrievedTeks,
+  type WebResearch,
+} from './teks-retrieval';
 
 export type ClassifyInput =
   | { kind: 'text'; text: string }
@@ -39,29 +27,96 @@ export type ClassifyResult = {
   rawResponse: unknown;
 };
 
-/** Number of parallel samples to vote over. 1 disables voting. */
+/** Number of parallel constrained selections to vote over. 1 disables voting. */
 const SAMPLE_COUNT = Math.max(1, Number(process.env.AI_CLASSIFY_SAMPLES ?? 3) || 3);
+
+const CandidateSelectionSchema = z.object({
+  reasoning: z
+    .string()
+    .describe('Explain the skill match and candidate comparison FIRST.'),
+  selectedCandidateKey: z
+    .string()
+    .describe('Copy one candidate key exactly, or use "unknown".'),
+  gradeLevelConfidence: z.enum(['high', 'medium', 'low']),
+  questionType: z.enum(QUESTION_TYPES),
+  difficulty: z.enum(['below_grade', 'on_grade', 'above_grade']),
+  keyConcepts: z.array(z.string()).min(1).max(5),
+});
+
+type CandidateSelection = z.infer<typeof CandidateSelectionSchema>;
+
+function candidateKey(candidate: RetrievedTeks) {
+  return `${candidate.subject}:${candidate.code}`;
+}
 
 function buildUserContent(input: ClassifyInput): UserContent {
   if (input.kind === 'text') {
     return [
       {
         type: 'text',
-        text: `Classify this test question.\n\nQuestion:\n${input.text}`,
+        text: `Select the TEKS standard for this test question.\n\nQuestion:\n${input.text}`,
       },
     ];
   }
   return [
     {
       type: 'text',
-      text: 'Classify the test question shown in this screenshot. Read it carefully first.',
+      text: 'Select the TEKS standard for the test question in this screenshot. Read it carefully first.',
     },
     imageFilePart(input.imageDataUrl),
   ];
 }
 
+function candidateReference(candidates: RetrievedTeks[]) {
+  return candidates
+    .map(
+      (candidate) =>
+        `- key=${candidateKey(candidate)} | grade=${candidate.gradeLevel} | ` +
+        `course=${candidate.course ?? 'none'} | ${candidate.description} | ` +
+        `official expectation=${candidate.studentExpectation}`,
+    )
+    .join('\n');
+}
+
+function hydrateClassification(
+  selection: CandidateSelection,
+  candidates: RetrievedTeks[],
+  plan: RetrievalPlan,
+): Classification {
+  const selected = candidates.find(
+    (candidate) => candidateKey(candidate) === selection.selectedCandidateKey,
+  );
+
+  const proposed: Classification = selected
+    ? {
+        reasoning: selection.reasoning,
+        gradeLevel: selected.gradeLevel,
+        gradeLevelConfidence: selection.gradeLevelConfidence,
+        subject: ClassificationSchema.shape.subject.parse(selected.subject),
+        teksStandard: selected.code,
+        teksDescription: selected.description,
+        questionType: selection.questionType,
+        difficulty: selection.difficulty,
+        keyConcepts: selection.keyConcepts,
+      }
+    : {
+        reasoning: `${selection.reasoning} No retrieved candidate was a defensible match.`,
+        gradeLevel: plan.estimatedGrade,
+        gradeLevelConfidence: 'low',
+        subject: plan.subject,
+        teksStandard: 'unknown',
+        teksDescription: 'No verified TEKS standard was selected from the retrieved corpus.',
+        questionType: selection.questionType,
+        difficulty: selection.difficulty,
+        keyConcepts: selection.keyConcepts,
+      };
+
+  return ClassificationSchema.parse(proposed);
+}
+
 type Sample = {
   classification: Classification;
+  selectedCandidateKey: string;
   modelId: string;
   responseId: string;
   latencyMs: number;
@@ -72,20 +127,38 @@ type Sample = {
 
 async function classifyOnce(
   content: UserContent,
+  candidates: RetrievedTeks[],
+  plan: RetrievalPlan,
+  research: WebResearch,
   modelId: string,
 ): Promise<Sample> {
   const started = performance.now();
   const result = await generateObject({
     model: getModel(modelId),
-    schema: ClassificationSchema,
-    schemaName: 'Classification',
-    schemaDescription: 'TEKS-anchored classification of a K-12 test question.',
-    instructions: CLASSIFY_SYSTEM,
+    schema: CandidateSelectionSchema,
+    schemaName: 'TeksCandidateSelection',
+    schemaDescription: 'Selection from retrieved and validated TEKS candidates.',
+    instructions: `You classify K-12 questions against TEKS, but you may only
+select from the retrieved database records below. Compare the tested skill to
+the official student expectation, then copy the best candidate key exactly.
+Use "unknown" if no candidate directly assesses the skill. Never invent or
+alter a code. Difficulty is relative to the selected standard's grade.
+
+Retrieval analysis:
+${plan.reasoning}
+
+Official-source web evidence (supporting evidence; the database is authoritative):
+${research.text || 'No web evidence was available.'}
+
+Retrieved TEKS candidates:
+${candidateReference(candidates)}`,
     messages: [{ role: 'user', content }],
     temperature: 0,
   });
+
   return {
-    classification: reconcileGrade(result.object),
+    classification: hydrateClassification(result.object, candidates, plan),
+    selectedCandidateKey: result.object.selectedCandidateKey,
     modelId: result.response.modelId || modelId,
     responseId: result.response.id,
     latencyMs: Math.round(performance.now() - started),
@@ -95,64 +168,44 @@ async function classifyOnce(
   };
 }
 
-/**
- * The spec's rule is "report the grade that standard belongs to". If the
- * model's gradeLevel disagrees with the grade implied by its own TEKS code,
- * the code wins and confidence is lowered one notch.
- */
-export function reconcileGrade(c: Classification): Classification {
-  const codeGrade = gradeFromTeksCode(c.teksStandard);
-  if (codeGrade === null || codeGrade === c.gradeLevel) return c;
-  return {
-    ...c,
-    gradeLevel: codeGrade,
-    gradeLevelConfidence:
-      c.gradeLevelConfidence === 'high' ? 'medium' : 'low',
-  };
-}
-
-/**
- * Pick the sample to return: majority grade, then the most common TEKS code
- * within that grade, then the earliest sample.
- */
+/** Pick the most common validated subject/code pair, then the earliest sample. */
 export function pickByVote(samples: Sample[]): Sample {
-  const gradeCounts = new Map<number, number>();
-  for (const s of samples) {
-    const g = s.classification.gradeLevel;
-    gradeCounts.set(g, (gradeCounts.get(g) ?? 0) + 1);
+  const counts = new Map<string, number>();
+  for (const sample of samples) {
+    const key = `${sample.classification.subject}:${sample.classification.teksStandard}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  const winningGrade = [...gradeCounts.entries()].sort(
-    (a, b) => b[1] - a[1] || a[0] - b[0],
-  )[0]![0];
-
-  const inGrade = samples.filter(
-    (s) => s.classification.gradeLevel === winningGrade,
-  );
-  const codeCounts = new Map<string, number>();
-  for (const s of inGrade) {
-    const code = s.classification.teksStandard;
-    codeCounts.set(code, (codeCounts.get(code) ?? 0) + 1);
-  }
-  const winningCode = [...codeCounts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
-
-  return inGrade.find((s) => s.classification.teksStandard === winningCode)!;
+  const winningKey = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+  return samples.find(
+    (sample) =>
+      `${sample.classification.subject}:${sample.classification.teksStandard}` === winningKey,
+  )!;
 }
 
-/** CALL 1 — classify a question against TEKS. */
+/**
+ * CALL 1 — plan retrieval, consult official web sources, retrieve database
+ * candidates, and make a constrained selection. Lesson generation remains a
+ * separate call and receives only this validated classification.
+ */
 export async function classify(
   input: ClassifyInput,
   modelId: string = CLASSIFY_MODEL_ID,
   sampleCount: number = SAMPLE_COUNT,
 ): Promise<ClassifyResult> {
   const started = performance.now();
+  const planned = await planTeksRetrieval(input, modelId);
+  const research = await researchOfficialTeks(planned.plan, modelId);
+  const candidates = await retrieveTeksCandidates(planned.plan, research);
   const content = buildUserContent(input);
 
   const settled = await Promise.allSettled(
-    Array.from({ length: sampleCount }, () => classifyOnce(content, modelId)),
+    Array.from({ length: sampleCount }, () =>
+      classifyOnce(content, candidates, planned.plan, research, modelId),
+    ),
   );
   const samples = settled
-    .filter((s): s is PromiseFulfilledResult<Sample> => s.status === 'fulfilled')
-    .map((s) => s.value);
+    .filter((sample): sample is PromiseFulfilledResult<Sample> => sample.status === 'fulfilled')
+    .map((sample) => sample.value);
 
   if (samples.length === 0) {
     const first = settled[0] as PromiseRejectedResult;
@@ -167,17 +220,39 @@ export async function classify(
     model: winner.modelId,
     latencyMs,
     rawResponse: {
+      groundingVersion: 1,
       selectedResponseId: winner.responseId,
+      selectedCandidateKey: winner.selectedCandidateKey,
+      retrievalPlan: {
+        ...planned.plan,
+        responseId: planned.responseId,
+        model: planned.model,
+        latencyMs: planned.latencyMs,
+        usage: planned.usage,
+      },
+      webResearch: research,
+      retrievedCandidates: candidates.map((candidate) => ({
+        key: candidateKey(candidate),
+        code: candidate.code,
+        subject: candidate.subject,
+        gradeLevel: candidate.gradeLevel,
+        description: candidate.description,
+        studentExpectation: candidate.studentExpectation,
+        sourceUrl: candidate.sourceUrl,
+        effectiveVersion: candidate.effectiveVersion,
+        retrievalScore: candidate.retrievalScore,
+      })),
       sampleCount,
       succeeded: samples.length,
-      samples: samples.map((s) => ({
-        responseId: s.responseId,
-        modelId: s.modelId,
-        latencyMs: s.latencyMs,
-        finishReason: s.finishReason,
-        usage: s.usage,
-        object: s.classification,
-        body: s.body,
+      samples: samples.map((sample) => ({
+        responseId: sample.responseId,
+        modelId: sample.modelId,
+        latencyMs: sample.latencyMs,
+        finishReason: sample.finishReason,
+        usage: sample.usage,
+        selectedCandidateKey: sample.selectedCandidateKey,
+        object: sample.classification,
+        body: sample.body,
       })),
     },
   };

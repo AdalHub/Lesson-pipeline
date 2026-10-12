@@ -1,13 +1,16 @@
 import {
+  index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { Lesson } from '@/server/ai/schemas';
 
 export const inputTypeEnum = pgEnum('input_type', ['text', 'image']);
@@ -17,6 +20,46 @@ export const difficultyEnum = pgEnum('difficulty', [
   'on_grade',
   'above_grade',
 ]);
+
+/**
+ * Authoritative standards used by the retrieval step before classification.
+ *
+ * `searchText` is deliberately materialized rather than generated so a later
+ * ingestion job can add synonyms teachers actually use (for example,
+ * "equal groups" alongside "multiplication"). Postgres' built-in full-text
+ * search indexes it; no separate vector database is required for this corpus.
+ */
+export const teksStandards = pgTable(
+  'teks_standards',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull(),
+    subject: text('subject').notNull(),
+    gradeLevel: integer('grade_level').notNull(),
+    course: text('course'),
+    knowledgeAndSkills: text('knowledge_and_skills').notNull(),
+    studentExpectation: text('student_expectation').notNull(),
+    description: text('description').notNull(),
+    effectiveVersion: text('effective_version').notNull(),
+    sourceUrl: text('source_url').notNull(),
+    sourceKind: text('source_kind').default('official').notNull(),
+    searchText: text('search_text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('teks_standards_subject_code_version_unique').on(
+      table.subject,
+      table.code,
+      table.effectiveVersion,
+    ),
+    index('teks_standards_search_idx').using(
+      'gin',
+      sql`to_tsvector('english', ${table.searchText})`,
+    ),
+  ],
+);
 
 export const submissions = pgTable('submissions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -97,3 +140,4 @@ export const lessonsRelations = relations(lessons, ({ one }) => ({
 export type Submission = typeof submissions.$inferSelect;
 export type ClassificationRow = typeof classifications.$inferSelect;
 export type LessonRow = typeof lessons.$inferSelect;
+export type TeksStandardRow = typeof teksStandards.$inferSelect;

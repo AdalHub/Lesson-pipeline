@@ -11,8 +11,8 @@ export const SAMPLE_QUESTIONS = [
     text: 'Maria has 4 bags. There are 6 apples in each bag. How many apples does Maria have in all?',
   },
   {
-    label: 'grade 5 science (physical vs chemical change)',
-    expectedGrade: 5,
+    label: 'grade 7 science (physical vs chemical change)',
+    expectedGrade: 7,
     text: 'Which of the following is an example of a physical change?\nA) A nail rusting in the rain\nB) Ice melting into water\nC) Wood burning in a fireplace\nD) Bread baking in an oven',
   },
   {

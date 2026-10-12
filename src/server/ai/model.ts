@@ -20,3 +20,10 @@ export const GENERATE_MODEL_ID =
 export function getModel(modelId: string) {
   return openai(modelId);
 }
+
+/** Responses API model used when the classifier needs provider-hosted tools. */
+export function getResponsesModel(modelId: string) {
+  return openai.responses(modelId);
+}
+
+export { openai };
