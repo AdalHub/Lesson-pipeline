@@ -14,7 +14,8 @@
     "smoke:generate": "node --env-file=.env.local --import tsx scripts/generate-smoke.ts",
     "smoke:pipeline": "node --env-file=.env.local --import tsx scripts/pipeline-smoke.ts",
     "smoke:determinism": "node --env-file=.env.local --import tsx scripts/determinism-check.ts",
-    "smoke:ui": "node --env-file=.env.local --import tsx scripts/ui-smoke.ts"
+    "smoke:ui": "node --env-file=.env.local --import tsx scripts/ui-smoke.ts",
+    "inspect:classification": "node --env-file=.env.local --import tsx scripts/inspect-classification.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.91",

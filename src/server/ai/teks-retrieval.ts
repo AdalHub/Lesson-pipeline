@@ -68,8 +68,11 @@ export async function planTeksRetrieval(
     schemaDescription: 'Search plan for finding relevant Texas TEKS standards.',
     instructions: `You prepare K-12 test questions for standards retrieval. Transcribe the
 question accurately, identify the skill without solving it, and produce concise
-search terms that resemble curriculum/standards language. Your grade is only a
-retrieval hint; a later step will choose from authoritative TEKS records.`,
+search terms that resemble curriculum/standards language. For multiple-choice
+items, classify the cognitive distinction required to separate the correct
+answer from the plausible distractors—not merely the topic illustrated by the
+correct option. Your grade is only a retrieval hint; a later step will choose
+from authoritative TEKS records.`,
     messages: [{ role: 'user', content: plannerContent(input) }],
     temperature: 0,
   });
@@ -127,8 +130,10 @@ export async function researchOfficialTeks(
 classified under the Texas Essential Knowledge and Skills. Search official TEA
 or Texas Administrative Code sources only. Return a concise evidence memo with
 the most plausible exact TEKS codes, their grade/course, and why the tested
-skill matches. Do not answer the student's question. If evidence is ambiguous,
-say so; never invent a code.`,
+skill matches. For multiple-choice items, the assessed skill is the distinction
+needed to reject the distractors, not just the isolated fact shown by the right
+option. Do not answer the student's question. If evidence is ambiguous, say so;
+never invent a code.`,
       prompt: [
         `Question: ${plan.normalizedQuestion}`,
         `Likely subject: ${plan.subject}`,

@@ -134,7 +134,7 @@ The app produces several related labels:
 The decision process in `src/server/ai/classify.ts` and `teks-retrieval.ts` is:
 
 1. Read the text or OCR the screenshot into a faithful normalized question.
-2. Name the tested skill and produce curriculum-language search terms.
+2. Name the tested skill and produce curriculum-language search terms. For multiple-choice items, use the distinction needed to reject the distractors—not merely the topic of the correct option.
 3. Ask OpenAI web search for supporting evidence from official Texas domains only.
 4. Rank records from `teks_standards` using skill overlap, subject, estimated grade, and exact codes mentioned by official-source research.
 5. Give the top ten records to the selector. It may copy one candidate key exactly or return `unknown`; an invented key is rejected by application code.

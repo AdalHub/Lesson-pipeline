@@ -139,8 +139,10 @@ async function classifyOnce(
     schemaName: 'TeksCandidateSelection',
     schemaDescription: 'Selection from retrieved and validated TEKS candidates.',
     instructions: `You classify K-12 questions against TEKS, but you may only
-select from the retrieved database records below. Compare the tested skill to
-the official student expectation, then copy the best candidate key exactly.
+select from the retrieved database records below. Compare the full cognitive
+demand to the official student expectation, then copy the best candidate key
+exactly. For multiple-choice questions, consider what distinction is required
+to reject the distractors; do not classify from the correct option alone.
 Use "unknown" if no candidate directly assesses the skill. Never invent or
 alter a code. Difficulty is relative to the selected standard's grade.
 
