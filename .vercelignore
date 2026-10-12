@@ -2,6 +2,7 @@
 .agents
 .env*
 backups
+private
 tmp
 screenshots
 node_modules

@@ -45,6 +45,7 @@ next-env.d.ts
 /screenshots
 /tmp/
 /backups/
+/private/
 
 .vercel
 .env*

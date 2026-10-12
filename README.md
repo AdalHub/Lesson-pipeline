@@ -1,5 +1,9 @@
 # Lesson Pipeline
 
+[![Pipeline checks](https://github.com/AdalHub/Lesson-pipeline/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AdalHub/Lesson-pipeline/actions/workflows/ci.yml)
+
+[Live app](https://lesson-pipeline.vercel.app) · [Source](https://github.com/AdalHub/Lesson-pipeline) · [Engineering report](PROJECT_REPORT.md) · [Verification audit](READINESS.md)
+
 Paste a K-12 test question (text or a screenshot) and get back a lesson that teaches a student how to answer that kind of question. The question is first classified against the Texas Essential Knowledge and Skills (TEKS), then a second AI call writes the lesson for that grade level. Both stages are persisted to Postgres so a bad classification can be diagnosed separately from a bad lesson.
 
 ## The two-stage architecture
