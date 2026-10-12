@@ -101,3 +101,10 @@ coverage, request count, latency and upload size).
 - **Upload cap corrected.** The old 6-million-character claim was wrong for Vercel's request limit. Both UI and API now cap the data URL at 4 million characters, leaving JSON overhead. Unsupported image formats are rejected before submission.
 - **Honest UI.** Grade is an estimated alignment, confidence is visible, unknown standards do not claim a selected record, and the upload form warns that history is public/shared.
 - **Recoverable demo replacement.** Old submissions and both output tables are archived in ignored JSON before deleting only their exact IDs. Restore is supported; records created after the snapshot are preserved. Backups, env files and downloaded PDF scratch files are explicitly excluded from Vercel uploads.
+
+## Milestone 12 — public source and engineering handoff
+
+- **Preserved history, not a new first commit.** Published the existing milestone commits to `AdalHub/Lesson-pipeline`, renamed the branch to `main`, and connected the existing Vercel project to GitHub. Earlier notes about no remote/hosted CI describe the state at that milestone, not the current state.
+- **Hosted CI verified.** [Run 38203785177](https://github.com/AdalHub/Lesson-pipeline/actions/runs/38203785177) passed unit tests, disposable-Postgres integration tests, lint, typecheck and build. The workflow has read-only repository permissions and no production secrets.
+- **Public source, private correspondence.** Added a focused publication audit for known local credentials, credential patterns, private paths and copied correspondence. It passed, but is not a comprehensive security scanner. The report is public; the Palmer email draft and recovery backups are ignored locally and excluded from deployment. Existing author metadata is retained.
+- **Document the limits, not just the success path.** `PROJECT_REPORT.md` explains actual retrieval, schemas, model operation count, failures that shaped prompts, catalog coverage and what the tests cannot prove. A valid catalog selection is not a guarantee of correct grade inference.

@@ -4,7 +4,7 @@ Verified October 11, 2026 (America/Chicago; October 12 UTC).
 
 Live app: https://lesson-pipeline.vercel.app
 
-Final application deployment: `lesson-pipeline-fx93v9pvu-adals-projects-42d1862b.vercel.app`.
+Application deployment used for the live test evidence below: `lesson-pipeline-fx93v9pvu-adals-projects-42d1862b.vercel.app`.
 The public alias is the link to share; generated deployment URLs may require Vercel login.
 
 ## Palmer's actual email requirements
@@ -58,8 +58,10 @@ Clipboard testing uses a synthetic event, not an OS clipboard end-to-end test.
   asserts schema, classification, citations and persisted output. Writes three lessons.
 - `scripts/verify-live-db.ts`: read-only final demo/corpus consistency checks.
 - `npm run lint`, `npm run typecheck`, `npm run build`: passed.
-- `.github/workflows/ci.yml`: ready for push/PR execution with a disposable Postgres
-  service. **No Git remote is configured, so hosted GitHub CI has not actually run.**
+- `.github/workflows/ci.yml`: push/PR execution with disposable Postgres. The first
+  [hosted run passed](https://github.com/AdalHub/Lesson-pipeline/actions/runs/38203785177)
+  unit/integration tests, lint, typecheck and build for commit `07dbc9a`.
+  Production credentials and paid live-provider checks are not part of ordinary CI.
 
 Live tests caught two classification problems before handoff: an inference question
 was classified as adult-assisted grade 1, and an addition word problem chose the
@@ -98,8 +100,9 @@ to restore a backup. Backups are local only and excluded from Vercel deployment.
 3. **Small evaluation set.** More teacher-labelled, independent questions are the next
    quality investment. Voting improves some consistency, not guaranteed truth. Confidence
    is heuristic; a grade label is not a student-placement assessment.
-4. **CI needs a source remote.** Connect the repo to the intended GitHub destination to
-   activate push/PR checks. This does not block sharing the working demo URL.
+4. **Live quality tests are separate from CI.** GitHub checks the deterministic contracts
+   and real local SQL integration, not model quality. Re-run paid provider/browser smoke
+   tests intentionally when changing prompts, models or retrieval.
 5. **Operational simplicity.** Base64 screenshots in Postgres, synchronous generation,
    lexical in-memory retrieval, and no full tracing/cost dashboard. These are reasonable
    exercise tradeoffs, not a design for a large school deployment.
@@ -107,3 +110,12 @@ to restore a backup. Backups are local only and excluded from Vercel deployment.
 For the conversation with Palmer, be ready to explain the stage boundary, runtime
 Zod validation versus tRPC's compile-time types, partial persistence, authoritative
 code selection versus uncertain grade inference, and what the tests do **not** prove.
+
+## Source handoff
+
+Published to [AdalHub/Lesson-pipeline](https://github.com/AdalHub/Lesson-pipeline) on
+`main`, retaining all 15 original milestone commits. Vercel is connected to the GitHub
+repository. Publication checks found no known local credential values, common secret
+patterns or copied email correspondence in the checked tracked content/history.
+This focused check is not a comprehensive security audit. The private email draft and
+database backups remain local and ignored; existing Git author metadata is public.

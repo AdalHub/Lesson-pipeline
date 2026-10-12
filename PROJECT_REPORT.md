@@ -315,7 +315,7 @@ despite its installed SDK's deprecation notice; migration should be tested separ
 | Live browser tests | Grade-2 text, grade-6 screenshot, Geometry text; progress, history, answer reveal, screenshot display, synthetic clipboard preview, mobile overflow | All browsers/devices or native OS clipboard behavior |
 | Post-cleanup checks | Six history entries; all lesson/source panels load; removed old URL returns 404 | Multi-user isolation or load resilience |
 | Build/tooling | Lint, typecheck and production build passed locally; Vercel build passed | Security/compliance certification |
-| GitHub CI | Workflow runs unit/integration tests, lint, typecheck and build using disposable Postgres; publication-run status is recorded in the handoff | Paid live-provider smoke tests are intentionally not run on every PR |
+| GitHub CI | [First hosted run passed](https://github.com/AdalHub/Lesson-pipeline/actions/runs/38203785177): unit/integration tests, lint, typecheck and build using disposable Postgres | Paid live-provider smoke tests are intentionally not run on every PR |
 
 Live tests found actual errors and led to fixes. The final six examples are therefore
 regression cases, not a blind holdout set. Claims like “100% accurate” or “TEKS guarantees
@@ -337,6 +337,11 @@ in the existing Git commit metadata; preserving history does not anonymize its a
 CI uses an explicit read-only repository permission and a local test database. It
 requires neither the production OpenAI key nor Neon credentials. Never put those
 credentials into ordinary workflow YAML or share them with forked PR jobs.
+
+The public GitHub repository preserves all 15 original milestone commits under `main`.
+The existing Vercel project is connected to GitHub; database migrations/imports are
+deliberate release operations, not automatic build steps. The email draft is local-only
+under ignored `private/`, not part of the public engineering report.
 
 ## 10. Honest limits and next steps
 

@@ -20,7 +20,7 @@ STAGE 1 — grounded classification
    → grade, subject and description come from the selected database record
    │
    ▼
-CALL 2 — generate (gpt-4.1), receives the classification as explicit input
+STAGE 2 — generate (gpt-4.1), receives the classification as explicit input
    → title, objective, prerequisites, explanation (Markdown),
      worked example with step-by-step "why", common mistakes,
      practice problems with hints and hidden answers
@@ -84,8 +84,9 @@ dedicated database. They assert successful text/image persistence, both failure 
 invalid input/output rejection, NOT_FOUND, and stable cursor pagination.
 
 `.github/workflows/ci.yml` runs tests, lint, typecheck and production build with an
-isolated Postgres service on every push/PR **once this repo is connected to GitHub**.
-No remote is currently configured; a workflow file is not evidence of a hosted CI run.
+isolated Postgres service on every push/PR. The first hosted run
+[passed all checks](https://github.com/AdalHub/Lesson-pipeline/actions/runs/38203785177).
+CI does not receive production database or OpenAI credentials.
 Real-provider scripts cost API usage; UI/live checks save demo records. Older
 `smoke:classify`, `smoke:generate`, and `smoke:determinism` scripts are diagnostic
 reports, not exhaustive accuracy tests. Do not confuse mock tests with AI quality evaluation.
@@ -101,6 +102,9 @@ reports, not exhaustive accuracy tests. Do not confuse mock tests with AI qualit
 5. `vercel --prod`.
 
 **Live URL:** [https://lesson-pipeline.vercel.app](https://lesson-pipeline.vercel.app)
+
+The existing Vercel project is connected to this GitHub repository. Schema migrations
+and catalog imports remain deliberate operations; the Git build does not run them.
 
 See `READINESS.md` for the latest verification results, Palmer requirement audit,
 and remaining limitations. Earlier prototype results in `DECISIONS.md` are historical.
