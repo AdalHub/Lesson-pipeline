@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AppHeader } from "@/components/AppHeader";
 import { TRPCProvider } from "@/trpc/client";
 
 const geistSans = Geist({
@@ -30,22 +30,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
       >
         <TRPCProvider>
-          <header className="border-b border-border bg-card/60">
-            <nav className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-              <Link href="/" className="font-semibold tracking-tight">
-                Lesson Pipeline
-              </Link>
-              <div className="flex gap-5 text-sm text-muted">
-                <Link href="/" className="hover:text-foreground">
-                  New lesson
-                </Link>
-                <Link href="/lessons" className="hover:text-foreground">
-                  History
-                </Link>
-              </div>
-            </nav>
-          </header>
-          <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
+          <AppHeader />
+          <main className="mx-auto w-full max-w-[1180px] px-5 py-10 sm:px-8 lg:px-0 lg:py-12">
+            {children}
+          </main>
         </TRPCProvider>
       </body>
     </html>

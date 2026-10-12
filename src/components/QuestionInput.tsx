@@ -133,9 +133,9 @@ export function QuestionInput() {
 
   return (
     <div className="space-y-4">
-      <div
-        className={`rounded-xl border-2 border-dashed p-1 transition-colors ${
-          dragOver ? 'border-accent bg-accent-soft/40' : 'border-border'
+      <section
+        className={`overflow-hidden rounded-[18px] border-2 bg-card transition-colors ${
+          dragOver ? 'border-accent bg-accent-soft/30' : 'border-foreground'
         }`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -149,52 +149,84 @@ export function QuestionInput() {
           if (file) void handleFile(file, file.name);
         }}
       >
-        {image ? (
-          <div className="space-y-3 p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={image.dataUrl}
-              alt="Question screenshot"
-              className="max-h-80 w-auto rounded-lg border border-border"
-            />
-            <div className="flex items-center justify-between text-sm text-muted">
-              <span>{image.name}</span>
-              <button
-                type="button"
-                onClick={() => setImage(null)}
-                disabled={generate.isPending}
-                className="text-danger hover:underline disabled:opacity-50"
-              >
-                Remove image
-              </button>
-            </div>
+        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-accent text-sm font-extrabold text-white">
+              1
+            </span>
+            <h2 className="font-bold">Add the test question</h2>
           </div>
-        ) : (
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={generate.isPending}
-            rows={7}
-            placeholder={
-              'Paste a test question here...\n\nOr paste a screenshot (Ctrl+V / Cmd+V), drop an image, or pick a file.'
-            }
-            className="w-full resize-y rounded-lg bg-transparent p-4 text-base outline-none placeholder:text-muted/70 disabled:opacity-60"
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit();
-            }}
-          />
-        )}
-      </div>
+          <p className="hidden text-xs text-muted sm:block">Text, PNG, JPG, or WebP</p>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {generate.isPending ? 'Working...' : 'Generate lesson'}
-        </button>
+        <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_270px]">
+          {image ? (
+            <div className="flex min-h-[170px] flex-col justify-between gap-3 rounded-xl border border-border bg-background p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image.dataUrl}
+                alt="Question screenshot"
+                className="max-h-64 w-auto rounded-lg border border-border object-contain"
+              />
+              <div className="flex items-center justify-between gap-4 text-sm text-muted">
+                <span className="truncate">{image.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setImage(null)}
+                  disabled={generate.isPending}
+                  className="shrink-0 font-semibold text-danger hover:underline disabled:opacity-50"
+                >
+                  Remove image
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative min-h-[170px] rounded-xl border border-border bg-background">
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                disabled={generate.isPending}
+                rows={6}
+                maxLength={10_000}
+                placeholder={'Paste a question here...\nExample: A store has 24 pencils and sells 9. How many are left?'}
+                className="min-h-[170px] w-full resize-y bg-transparent p-4 pb-9 text-base leading-6 outline-none placeholder:text-muted/70 disabled:opacity-60"
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit();
+                }}
+              />
+              <span className="pointer-events-none absolute bottom-3 left-4 text-xs text-muted">
+                {text.length.toLocaleString()} / 10,000 characters
+              </span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={generate.isPending}
+            className={`flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-5 text-center transition disabled:opacity-50 ${
+              dragOver
+                ? 'border-accent bg-accent-soft'
+                : 'border-foreground bg-card hover:bg-background'
+            }`}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-foreground bg-signal">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" />
+              </svg>
+            </span>
+            <span className="text-sm font-bold">Drop a screenshot</span>
+            <span className="text-xs text-muted">or click to choose a file</span>
+          </button>
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -206,19 +238,27 @@ export function QuestionInput() {
             e.target.value = '';
           }}
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={generate.isPending}
-          className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent-soft/40 disabled:opacity-50"
-        >
-          Upload screenshot
-        </button>
-        <span className="text-xs text-muted">Ctrl+Enter to submit</span>
-      </div>
+
+        <div className="flex flex-col items-start justify-between gap-4 border-t border-border bg-background px-5 py-4 sm:flex-row sm:items-center sm:px-6">
+          <p className="text-xs leading-5 text-muted">
+            Your input is saved before either AI step begins. Ctrl+Enter also submits.
+          </p>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!canSubmit}
+            className="flex h-12 items-center gap-3 rounded-lg border-2 border-foreground bg-foreground px-5 text-sm font-bold text-card transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+          >
+            {generate.isPending ? 'Working...' : 'Generate lesson'}
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-signal text-foreground">
+              →
+            </span>
+          </button>
+        </div>
+      </section>
 
       {stage && (
-        <ol className="space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
+        <ol className="space-y-2 rounded-xl border border-foreground bg-card p-4 text-sm">
           <StageRow
             n={1}
             label="Classifying against TEKS"

@@ -1,17 +1,31 @@
 import { TRPCError } from '@trpc/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ClassificationBadge } from '@/components/ClassificationBadge';
+import { ClassificationBadge, humanize } from '@/components/ClassificationBadge';
 import { LessonView } from '@/components/LessonView';
 import { api } from '@/trpc/server';
 
 export const dynamic = 'force-dynamic';
+
+const SUBJECT_LABELS: Record<string, string> = {
+  math: 'Mathematics',
+  reading_language_arts: 'Reading / Language Arts',
+  science: 'Science',
+  social_studies: 'Social Studies',
+  other: 'Other',
+};
 
 function formatDate(d: Date) {
   return d.toLocaleString('en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
+}
+
+function ordinal(n: number) {
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return `${n}${suffixes[(v - 20) % 10] ?? suffixes[v] ?? suffixes[0]}`;
 }
 
 export default async function LessonPage({
@@ -36,97 +50,156 @@ export default async function LessonPage({
 
   const { submission, classification, lesson } = data;
 
-  return (
-    <div className="space-y-8">
-      <section className="space-y-3">
-        <p className="text-xs uppercase tracking-wide text-muted">
-          Submitted {formatDate(submission.createdAt)}
-        </p>
-        {submission.inputType === 'image' && submission.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={submission.imageUrl}
-            alt="Submitted question screenshot"
-            className="max-h-96 w-auto rounded-xl border border-border"
-          />
+  if (!classification || !lesson) {
+    return (
+      <div className="space-y-7">
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-accent">
+            Saved submission
+          </p>
+          <h1 className="text-4xl font-extrabold tracking-[-0.04em]">
+            Pipeline result
+          </h1>
+        </div>
+        <OriginalQuestion submission={submission} />
+        {classification ? (
+          <section className="space-y-3 rounded-xl border border-border bg-card p-5">
+            <ClassificationBadge
+              gradeLevel={classification.gradeLevel}
+              gradeLevelConfidence={classification.gradeLevelConfidence}
+              subject={classification.subject}
+              teksStandard={classification.teksStandard}
+              difficulty={classification.difficulty}
+              questionType={classification.questionType}
+            />
+            <p className="text-sm text-muted">{classification.teksDescription}</p>
+          </section>
         ) : (
-          <blockquote className="whitespace-pre-wrap rounded-xl border border-border bg-card p-4 font-mono text-sm">
-            {submission.rawText}
-          </blockquote>
+          <Notice title="No classification">
+            The classification call failed for this submission, so nothing further was generated.
+          </Notice>
         )}
+        {classification && !lesson && (
+          <Notice title="No lesson">
+            Classification succeeded, but lesson generation failed. The classification was kept.
+          </Notice>
+        )}
+        <FooterLinks />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-7">
+      <section className="overflow-hidden rounded-[18px] border-2 border-foreground bg-card lg:flex">
+        <div className="flex-1 space-y-4 p-7 sm:p-9">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-accent">
+            Generated lesson · Ready
+          </p>
+          <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-[-0.04em] sm:text-[42px]">
+            {lesson.content.title}
+          </h1>
+          <p className="max-w-3xl text-base leading-7 text-muted">
+            {lesson.content.objective}
+          </p>
+        </div>
+        <aside className="flex w-full flex-col justify-between gap-6 border-t-2 border-foreground bg-signal p-7 lg:w-[310px] lg:border-l-2 lg:border-t-0">
+          <p className="text-xs font-bold uppercase tracking-[0.08em]">Classification</p>
+          <div className="space-y-3">
+            <p className="text-3xl font-extrabold tracking-[-0.03em]">
+              {ordinal(classification.gradeLevel)} grade
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-foreground bg-card px-3 py-1.5 text-xs font-bold">
+                {SUBJECT_LABELS[classification.subject] ?? humanize(classification.subject)}
+              </span>
+              <span className="rounded-full border border-foreground bg-card px-3 py-1.5 font-mono text-xs font-bold">
+                TEKS {classification.teksStandard}
+              </span>
+            </div>
+          </div>
+        </aside>
       </section>
 
-      {classification ? (
-        <section className="space-y-3">
-          <ClassificationBadge
-            gradeLevel={classification.gradeLevel}
-            gradeLevelConfidence={classification.gradeLevelConfidence}
-            subject={classification.subject}
-            teksStandard={classification.teksStandard}
-            difficulty={classification.difficulty}
-            questionType={classification.questionType}
-          />
-          <p className="text-sm text-muted">{classification.teksDescription}</p>
-          <details className="text-sm">
-            <summary className="cursor-pointer select-none text-muted hover:text-foreground">
-              Why this classification?
-            </summary>
-            <div className="mt-2 space-y-2 rounded-xl border border-border bg-card p-4">
+      <div className="flex flex-col items-start gap-7 lg:flex-row">
+        <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-5 lg:w-[270px]">
+          <nav className="rounded-xl border border-border bg-card p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.08em]">Lesson map</p>
+            <div className="mt-4 space-y-3 text-sm">
+              <a href="#concept" className="block border-l-4 border-accent pl-3 font-bold">Concept</a>
+              <a href="#worked-example" className="block pl-4 text-muted hover:text-foreground">Worked example</a>
+              <a href="#common-mistakes" className="block pl-4 text-muted hover:text-foreground">Common mistakes</a>
+              <a href="#practice" className="block pl-4 text-muted hover:text-foreground">Practice</a>
+            </div>
+          </nav>
+
+          <OriginalQuestion submission={submission} dark />
+
+          <details className="rounded-xl border border-border bg-card p-5 text-sm">
+            <summary className="cursor-pointer select-none font-bold">Why this classification?</summary>
+            <div className="mt-3 space-y-2 leading-6 text-muted">
               <p>{classification.reasoning}</p>
-              <p className="text-muted">
-                Key concepts: {classification.keyConcepts.join(', ')}
-              </p>
-              <p className="font-mono text-xs text-muted">
-                {classification.model} · {classification.latencyMs} ms
-              </p>
+              <p><span className="font-semibold text-foreground">TEKS: </span>{classification.teksDescription}</p>
+              <p><span className="font-semibold text-foreground">Concepts: </span>{classification.keyConcepts.join(', ')}</p>
             </div>
           </details>
-        </section>
-      ) : (
-        <Notice title="No classification">
-          The classification call failed for this submission, so nothing
-          further was generated.
-        </Notice>
-      )}
+        </aside>
 
-      {lesson ? (
-        <>
-          <hr className="border-border" />
-          <LessonView lesson={lesson.content} />
-          <p className="font-mono text-xs text-muted">
-            Lesson by {lesson.model} in {lesson.latencyMs} ms
-          </p>
-        </>
-      ) : classification ? (
-        <Notice title="No lesson">
-          The classification succeeded but lesson generation failed. The
-          classification above was kept.
-        </Notice>
-      ) : null}
+        <LessonView lesson={lesson.content} />
+      </div>
 
-      <p className="text-sm">
-        <Link href="/" className="text-accent hover:underline">
-          ← New question
-        </Link>
-        <span className="mx-2 text-muted">·</span>
-        <Link href="/lessons" className="text-accent hover:underline">
-          History
-        </Link>
-      </p>
+      <div className="flex flex-col justify-between gap-3 border-t border-border pt-5 text-xs text-muted sm:flex-row">
+        <p>
+          Submitted {formatDate(submission.createdAt)} · {classification.model} in {classification.latencyMs} ms · {lesson.model} in {lesson.latencyMs} ms
+        </p>
+        <FooterLinks />
+      </div>
     </div>
   );
 }
 
-function Notice({
-  title,
-  children,
+function OriginalQuestion({
+  submission,
+  dark = false,
 }: {
-  title: string;
-  children: React.ReactNode;
+  submission: Awaited<ReturnType<typeof api.lesson.getById>>['submission'];
+  dark?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm">
-      <p className="font-semibold text-danger">{title}</p>
+    <section className={`rounded-xl p-5 ${dark ? 'bg-foreground text-card' : 'border border-border bg-card'}`}>
+      <p className={`text-xs font-bold uppercase tracking-[0.08em] ${dark ? 'text-signal' : 'text-accent'}`}>
+        Original question
+      </p>
+      {submission.inputType === 'image' && submission.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={submission.imageUrl}
+          alt="Submitted question screenshot"
+          className="mt-3 max-h-72 w-auto rounded-lg bg-white object-contain"
+        />
+      ) : (
+        <blockquote className="mt-3 whitespace-pre-wrap text-sm leading-6">
+          {submission.rawText}
+        </blockquote>
+      )}
+    </section>
+  );
+}
+
+function FooterLinks() {
+  return (
+    <p className="shrink-0 text-sm font-semibold">
+      <Link href="/" className="text-accent hover:underline">← New question</Link>
+      <span className="mx-2 text-muted">·</span>
+      <Link href="/lessons" className="text-accent hover:underline">History</Link>
+    </p>
+  );
+}
+
+function Notice({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-danger/40 bg-danger-soft px-5 py-4 text-sm">
+      <p className="font-bold text-danger">{title}</p>
       <p className="mt-1">{children}</p>
     </div>
   );
