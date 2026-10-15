@@ -20,9 +20,12 @@ TEKS expectation, question type, difficulty and key concepts. A separate generat
 stage receives that classification and writes the lesson at the selected level.
 
 Three screens are implemented: question input, generated lesson and cursor-paginated
-history. Lessons contain an objective, prerequisites, explanation, a new worked
-example with explanations for each step, common mistakes, and new practice questions
-with initially hidden hints/answers. Screens support desktop and mobile layouts.
+history. Lessons are interactive slide decks designed from learning-science
+principles (see `LESSON_DESIGN.md`): a plan that names the target misconception, a
+concrete-first big idea, varied examples, a named self-check with a non-example,
+guided practice with feedback that explains, a quiz with an 80% pass mark, and a
+recap. Lessons stored before the redesign keep their original document layout.
+Screens support desktop and mobile layouts.
 
 The application is a working demonstration, not a student-information system or a
 validated educational assessment. The production model calls are real. Fake providers
@@ -247,19 +250,20 @@ type Classification = {
   keyConcepts: string[];
 };
 
+// Lesson v2 (current). Abbreviated; the full schema is src/server/ai/schemas.ts.
 type Lesson = {
-  title: string;
-  objective: string;
-  prerequisites: string[];
-  explanation: string; // Markdown
-  workedExample: {
-    problem: string;
-    steps: { step: string; explanation: string }[]; // at least 2
-    answer: string;
-  };
-  commonMistakes: { mistake: string; whyItHappens: string; howToAvoid: string }[]; // 1–4
-  practiceProblems: { problem: string; hint: string; answer: string }[]; // 2–5
+  plan: { learningGoal; priorKnowledge; coreMisconception; successCriteria: string[] }; // written first
+  title; skill; topic; objective; keyTerms: string[];
+  bigIdea: { heading; rule; partLabel; before: string[]; actionLabel; after: Segment[]; annotations: { role; label }[] };
+  teach: { label; heading; prompt; cases: { name; meaning; example: Segment[]; holds: boolean; check }[] }; // 2–4
+  strategy: { name; label; instruction; example: CheckedStatement; nonExample: CheckedStatement; rule };
+  guidedPractice: { question; reminder; hint; options: { text; correct; feedback }[] }; // exactly 3, one correct
+  quiz: { heading; items: { prompt; choices: string[]; answerIndex; explanation; targetsMisconception }[] }; // 3–5
+  recap: { heading; takeaways: string[]; watchOut };
 };
+// Segment = { text, role: 'plain' | 'key' | 'mark' | 'focus' }
+// Rows written before October 2026 hold the earlier shape (explanation, workedExample,
+// commonMistakes, practiceProblems) and are still rendered; see StoredLessonSchema.
 ```
 
 `reasoning` comes first as a prompt/output organization choice. It is an inspectable

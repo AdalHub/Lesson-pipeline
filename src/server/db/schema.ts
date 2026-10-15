@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
-import type { Lesson } from '@/server/ai/schemas';
+import type { StoredLesson } from '@/server/ai/schemas';
 
 export const inputTypeEnum = pgEnum('input_type', ['text', 'image']);
 export const confidenceEnum = pgEnum('confidence', ['high', 'medium', 'low']);
@@ -102,7 +102,7 @@ export const lessons = pgTable('lessons', {
     .notNull()
     .references(() => classifications.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
-  content: jsonb('content').$type<Lesson>().notNull(),
+  content: jsonb('content').$type<StoredLesson>().notNull(),
   model: text('model').notNull(),
   latencyMs: integer('latency_ms').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })

@@ -21,9 +21,11 @@ STAGE 1 — grounded classification
    │
    ▼
 STAGE 2 — generate (gpt-4.1), receives the classification as explicit input
-   → title, objective, prerequisites, explanation (Markdown),
-     worked example with step-by-step "why", common mistakes,
-     practice problems with hints and hidden answers
+   → a plan first (goal, prior knowledge, the misconception, success criteria),
+     then an interactive deck: title → big idea → varied examples → strategy
+     with a non-example → guided practice with explaining feedback →
+     quiz with an 80% pass mark → recap (see LESSON_DESIGN.md)
+   → deterministic pedagogy checks, one repair pass, answer positions shuffled
    │
    ▼
 submissions → classifications → lessons   (Postgres via Drizzle)

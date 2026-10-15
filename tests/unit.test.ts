@@ -29,7 +29,7 @@ test('schema rejects out-of-range classifications and incomplete lessons', () =>
   assert(!ClassificationSchema.safeParse({ ...classification, gradeLevel: 13 }).success);
   assert(!ClassificationSchema.safeParse({ ...classification, subject: 'invented' }).success);
   assert(LessonSchema.safeParse(lesson).success);
-  assert(!LessonSchema.safeParse({ ...lesson, practiceProblems: [] }).success);
+  assert(!LessonSchema.safeParse({ ...lesson, quiz: { ...lesson.quiz, items: [] } }).success);
 });
 test('image content rejects malformed data URLs', () => {
   assert.throws(() => imageFilePart('https://example.com/image.png'));

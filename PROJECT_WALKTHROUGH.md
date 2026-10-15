@@ -8,7 +8,7 @@ The browser accepts exactly one input: question text or a screenshot. The React 
 
 Stage 1 classifies the question against TEKS using retrieval rather than model recall. A structured planning operation reads/OCRs the question and produces standards-language search terms. OpenAI's hosted web-search tool checks official TEA/TAC sources. The app retrieves ten candidate standards from the Neon `teks_standards` table, and three parallel structured selections may copy only one retrieved `subject:code` key or return `unknown`. Grade, subject, and description are then hydrated from that database row—not from model prose—and the validated samples are voted.
 
-The classification is persisted before Call 2 begins. Call 2 receives the original question plus the complete classification as explicit input and returns another Zod-validated object: a grade-appropriate lesson with an objective, explanation, worked example, mistakes, and practice. That lesson is persisted separately. This three-table shape makes failures diagnosable and preserves partial work.
+The classification is persisted before Call 2 begins. Call 2 receives the original question plus the complete classification as explicit input and returns another Zod-validated object: an interactive lesson deck (plan, big idea, varied examples, strategy, guided practice, quiz, recap) at the classified grade level. Deterministic pedagogy checks run on it, with one repair pass if needed. That lesson is persisted separately. `LESSON_DESIGN.md` explains the structure. This three-table shape makes failures diagnosable and preserves partial work.
 
 Next.js provides the React UI, server-rendered lesson/history pages, and the `/api/trpc` HTTP route. tRPC gives the browser a type-safe client for server procedures; Zod performs runtime validation; Drizzle maps TypeScript objects to SQL; `pg` maintains the Postgres connection pool. `DATABASE_URL` selects the database: the current local configuration and production both use Neon, while automated integration tests explicitly use a separate local Postgres database.
 
@@ -89,32 +89,27 @@ The source of truth is `src/server/ai/schemas.ts`.
 
 ### Lesson output
 
+The shape is long, so the full definition lives in `src/server/ai/schemas.ts`. In outline:
+
 ```ts
 {
-  title: string;
-  objective: string;
-  prerequisites: string[];
-  explanation: string; // Markdown
-  workedExample: {
-    problem: string;
-    steps: Array<{
-      step: string;
-      explanation: string; // why the step is taken
-    }>; // at least 2
-    answer: string;
-  };
-  commonMistakes: Array<{
-    mistake: string;
-    whyItHappens: string;
-    howToAvoid: string;
-  }>; // 1 to 4
-  practiceProblems: Array<{
-    problem: string;
-    hint: string;
-    answer: string;
-  }>; // 2 to 5
+  plan: { learningGoal, priorKnowledge, coreMisconception, successCriteria }, // written first
+  title, skill, topic, objective, keyTerms,
+  bigIdea:        { heading, rule, before[], after: Segment[], annotations[] },
+  teach:          { cases: { name, meaning, example: Segment[], holds, check }[] },   // 2 to 4
+  strategy:       { name, instruction, example, nonExample, rule },
+  guidedPractice: { question, hint, options: { text, correct, feedback }[] },          // 3, one correct
+  quiz:           { items: { prompt, choices, answerIndex, explanation, targetsMisconception }[] }, // 3 to 5
+  recap:          { heading, takeaways[2], watchOut },
 }
 ```
+
+Cross-field rules (exactly one correct option, a non-example with a failing part, an
+`answerIndex` that exists, at least one quiz item aimed at the misconception) are enforced
+in the Zod schema. Pedagogy checks that are not shape (new items, explaining feedback,
+a quiz that cannot be passed by always tapping the same answer) live in
+`src/server/ai/lesson-quality.ts`. Rows saved before the redesign hold the older shape and
+are still rendered.
 
 The AI SDK receives these Zod schemas. If the model response does not match, the call fails instead of letting malformed data enter the database. This is runtime safety; TypeScript alone would disappear after compilation and could not validate a network response.
 

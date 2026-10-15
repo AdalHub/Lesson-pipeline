@@ -2,7 +2,9 @@ import { TRPCError } from '@trpc/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ClassificationBadge, humanize } from '@/components/ClassificationBadge';
+import { LessonDesignPanel } from '@/components/LessonDesignPanel';
 import { LessonView } from '@/components/LessonView';
+import { isSlideLesson } from '@/server/ai/schemas';
 import { api } from '@/trpc/server';
 
 export const dynamic = 'force-dynamic';
@@ -133,15 +135,19 @@ export default async function LessonPage({
 
       <div className="flex flex-col items-start gap-7 lg:flex-row">
         <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-5 lg:w-[270px]">
-          <nav className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.08em]">Lesson map</p>
-            <div className="mt-4 space-y-3 text-sm">
-              <a href="#concept" className="block border-l-4 border-accent pl-3 font-bold">Concept</a>
-              <a href="#worked-example" className="block pl-4 text-muted hover:text-foreground">Worked example</a>
-              <a href="#common-mistakes" className="block pl-4 text-muted hover:text-foreground">Common mistakes</a>
-              <a href="#practice" className="block pl-4 text-muted hover:text-foreground">Practice</a>
-            </div>
-          </nav>
+          {isSlideLesson(lesson.content) ? (
+            <LessonDesignPanel lesson={lesson.content} />
+          ) : (
+            <nav className="rounded-xl border border-border bg-card p-5">
+              <p className="text-xs font-bold uppercase tracking-[0.08em]">Lesson map</p>
+              <div className="mt-4 space-y-3 text-sm">
+                <a href="#concept" className="block border-l-4 border-accent pl-3 font-bold">Concept</a>
+                <a href="#worked-example" className="block pl-4 text-muted hover:text-foreground">Worked example</a>
+                <a href="#common-mistakes" className="block pl-4 text-muted hover:text-foreground">Common mistakes</a>
+                <a href="#practice" className="block pl-4 text-muted hover:text-foreground">Practice</a>
+              </div>
+            </nav>
+          )}
 
           <OriginalQuestion submission={submission} dark />
 
@@ -156,7 +162,7 @@ export default async function LessonPage({
           </details>
         </aside>
 
-        <LessonView lesson={lesson.content} />
+        <LessonView lesson={lesson.content} gradeLevel={classification.gradeLevel} />
       </div>
 
       <div className="flex flex-col justify-between gap-3 border-t border-border pt-5 text-xs text-muted sm:flex-row">

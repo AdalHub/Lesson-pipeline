@@ -16,7 +16,7 @@ async function main() {
     await migrate(db, { migrationsFolder: './drizzle' });
     await pool.end();
   }
-  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', integration ? 'tests/pipeline.test.ts' : 'tests/unit.test.ts'], {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', ...(integration ? ['tests/pipeline.test.ts'] : ['tests/unit.test.ts', 'tests/lesson.test.ts'])], {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: connection, OPENAI_API_KEY: '', AI_WEB_LOOKUP: 'false' },
   });

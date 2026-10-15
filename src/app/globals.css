@@ -48,3 +48,133 @@ a,
 summary {
   outline-offset: 3px;
 }
+
+
+/* ------------------------------------------------------------------ */
+/* Lesson slides                                                       */
+/*                                                                    */
+/* Tokens mirror the "Lesson Slides" page of the Paper file            */
+/* (Lesson Pipeline UI), so classes exported from Paper work as-is:    */
+/* bg-slide-teal-soft, text-slide-h1, tracking-label, rounded-slide-md */
+/* The *-strong colours are the accessible variants (4.5:1 on tints).  */
+/* sky-from/to differ from Paper (#22b2d1 -> #118ca9): white copy sits  */
+/* on the dark left of the gradient so it clears 4.5:1; the light end   */
+/* sits behind the illustration. Update Paper to match when it resets.  */
+/* ------------------------------------------------------------------ */
+@theme inline {
+  --color-paper: #ffffff;
+  --color-slide-ink: #20223a;
+  --color-slide-ink-soft: #5a5c72;
+  --color-slide-line: #e8e6ef;
+  --color-slide-surface: #f7f8fa;
+  --color-slide-teal: #1aa6c4;
+  --color-slide-teal-strong: #00708e;
+  --color-slide-teal-soft: #d5f1f7;
+  --color-slide-teal-wash: #ebfafd;
+  --color-slide-sky-from: #0d7c97;
+  --color-slide-sky-to: #25b6d6;
+  --color-slide-pink: #ff2e7e;
+  --color-slide-pink-fill: #de286e;
+  --color-slide-pink-strong: #bf235f;
+  --color-slide-pink-soft: #ffd9e8;
+  --color-slide-orange-strong: #a85111;
+  --color-slide-orange-soft: #ffe7d1;
+  --color-slide-sun: #ffc93c;
+  --color-slide-sun-strong: #876b20;
+  --color-slide-sun-soft: #fff1cc;
+
+  --font-slide-display: var(--font-fredoka), "Fredoka", system-ui, sans-serif;
+  --font-slide-body: var(--font-nunito), "Nunito", system-ui, sans-serif;
+
+  --text-slide-label: 14px;
+  --text-slide-body: 18px;
+  --text-slide-title: 24px;
+  --text-slide-h2: 34px;
+  --text-slide-h1: 48px;
+  --text-slide-display: 72px;
+
+  --radius-slide-sm: 10px;
+  --radius-slide-md: 18px;
+  --radius-slide-lg: 28px;
+
+  --tracking-label: 0.08em;
+  --leading-copy: 26px;
+}
+
+/*
+ * Fluid type for slides. Paper designs at 1280 x 720; inside a slide frame
+ * (container-type: inline-size) one design pixel is 1/12.8 cqw, clamped so
+ * text stays readable on narrow screens and never exceeds the design size.
+ */
+@utility slide-display {
+  font-size: clamp(2.5rem, 7.5cqw, 6rem);
+  line-height: 1.08;
+}
+@utility slide-display-md {
+  font-size: clamp(2.25rem, 5.6cqw, 4.5rem);
+  line-height: 1.1;
+}
+@utility slide-display-sm {
+  font-size: clamp(1.875rem, 4.4cqw, 3.5rem);
+  line-height: 1.1;
+}
+@utility slide-h1 {
+  font-size: clamp(1.625rem, 3.75cqw, 3rem);
+  line-height: 1.1;
+}
+@utility slide-recap-h1 {
+  font-size: clamp(1.875rem, 5cqw, 4rem);
+  line-height: 1.1;
+}
+@utility slide-lead {
+  font-size: clamp(1.0625rem, 1.875cqw, 1.5rem);
+  line-height: 1.42;
+}
+@utility slide-tile {
+  font-size: clamp(1.25rem, 3.125cqw, 2.5rem);
+  line-height: 1.15;
+}
+@utility slide-sentence {
+  font-size: clamp(1.1875rem, 2.5cqw, 2rem);
+  line-height: 1.25;
+}
+@utility slide-card {
+  font-size: clamp(1.0625rem, 1.8cqw, 1.4375rem);
+  line-height: 1.3;
+}
+@utility slide-small {
+  font-size: clamp(0.9375rem, 1.35cqw, 1.0625rem);
+  line-height: 1.45;
+}
+@utility slide-eyebrow {
+  font-size: clamp(0.75rem, 1.17cqw, 0.9375rem);
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+}
+@utility slide-pad-x {
+  padding-inline: clamp(1.25rem, 6.875cqw, 5.5rem);
+}
+@utility slide-pad-y {
+  padding-block: clamp(1.5rem, 6.5cqw, 5rem) clamp(1.25rem, 4.4cqw, 3.5rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-motion {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@keyframes slide-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.slide-enter {
+  animation: slide-enter 280ms ease-out both;
+}

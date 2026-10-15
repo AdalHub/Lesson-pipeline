@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { db, pool } from '../src/server/db';
 import { teksStandards } from '../src/server/db/schema';
-import { ClassificationSchema, LessonSchema } from '../src/server/ai/schemas';
+import { ClassificationSchema, StoredLessonSchema } from '../src/server/ai/schemas';
 
 async function main() {
   const standards = await db.select().from(teksStandards);
@@ -15,7 +15,7 @@ async function main() {
     const c = row.classifications[0];
     const l = row.lessons[0];
     ClassificationSchema.parse(c);
-    LessonSchema.parse(l.content);
+    StoredLessonSchema.parse(l.content);
     assert(c.model && l.model);
     assert(c.latencyMs >= 0 && l.latencyMs >= 0);
     assert.equal(l.classificationId, c.id);

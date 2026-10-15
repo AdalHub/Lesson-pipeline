@@ -108,3 +108,70 @@ coverage, request count, latency and upload size).
 - **Hosted CI verified.** [Run 38203785177](https://github.com/AdalHub/Lesson-pipeline/actions/runs/38203785177) passed unit tests, disposable-Postgres integration tests, lint, typecheck and build. The workflow has read-only repository permissions and no production secrets.
 - **Public source, private correspondence.** Added a focused publication audit for known local credentials, credential patterns, private paths and copied correspondence. It passed, but is not a comprehensive security scanner. The report is public; the Palmer email draft and recovery backups are ignored locally and excluded from deployment. Existing author metadata is retained.
 - **Document the limits, not just the success path.** `PROJECT_REPORT.md` explains actual retrieval, schemas, model operation count, failures that shaped prompts, catalog coverage and what the tests cannot prove. A valid catalog selection is not a guarantee of correct grade inference.
+
+## Milestone 13 — learning-science lesson redesign
+
+Prompted by staff-engineer review: the first lesson format was a schema around
+whatever the model produced, not a design built on how students learn. Classification
+code was left unchanged; it is being reworked separately. The reasoning for the new
+structure is in `LESSON_DESIGN.md`.
+
+- **The lesson is now a fixed pedagogical frame, not a free-form document.** Seven
+  screens (the reference deck's eight steps; practice question and answered state
+  share a screen): title, big idea, varied examples, strategy with a non-example,
+  guided practice, quiz, recap. The model fills the frame; the order and fields are
+  not its choice.
+- **A plan is the first field of the output.** Learning goal, prior knowledge, the
+  single core misconception and success criteria are written before any slide, and
+  the non-example, wrong options, a quiz item and the recap warning must serve it.
+  One structured call, not a plan-then-write chain, to keep latency flat.
+- **Structure is enforced in the Zod schema** (one correct option, a non-example with
+  a failing part, valid `answerIndex`, at least one quiz item aimed at the
+  misconception). **Pedagogy is checked in code** (`lesson-quality.ts`): new items
+  not copies of the question, feedback that explains, a quiz that cannot be passed by
+  always tapping the same answer, no markup or emoji, reading level by grade. `fix`
+  findings buy one corrective regeneration; `warn` findings are stored only.
+- **The better of two drafts is kept, never the worse.** A failed repair attempt
+  keeps the first draft and records `repairFailure`. Generation has an 85 s budget so
+  two attempts fit under the route's 120 s limit.
+- **Answer positions are normalised after generation**, persisted, and not random per
+  view: guided options are shuffled, and quiz choices are shuffled when they are
+  phrases (short pairs such as "Compound" / "Not" keep their order). Models put the
+  correct choice first or in the middle far more often than chance.
+- **Two checks were wrong the first time and were corrected from real output.** The
+  duplicate check stripped maths symbols, so `6 + 5` and `6 - 5` matched. The
+  "copied from the question" check flagged a shared question stem. Both are now
+  covered by regression tests. A third, "joining word already on the card", is
+  advisory because numbers and punctuation legitimately appear there.
+- **Annotation roles are tolerated, not retried.** Models often annotate a role they
+  did not use. That used to cost a full regeneration; the schema now accepts it, the
+  legend skips it, and the quality layer warns.
+- **Old rows keep working.** `lessons.content` is `jsonb`, so there is no migration.
+  `StoredLessonSchema` accepts both shapes, `isSlideLesson` picks the renderer, and
+  the previous view lives on as `LegacyLessonView`. Verified against a real stored
+  lesson on a local dev server using read-only database access.
+- **The interface was designed in Paper and implemented from its export.** Thirteen
+  artboards on a "Lesson Slides" page of the Lesson Pipeline UI file, with tokens
+  prefixed `--color-slide-*` registered in `globals.css` so exported classes work
+  unchanged. The reference file could not be cloned or exported (edit access is
+  required), so its tokens and fonts were read through the MCP and its layout
+  rebuilt from the screenshots. Paper's free-tier weekly MCP limit then ran out
+  after six of thirteen exports; the rest were ported from the HTML written to
+  Paper. Paper Desktop has to be running for the MCP to respond.
+- **Accessibility changes from the reference, on purpose.** Brand teal is 2.9:1 on
+  white, so text, control borders and filled buttons use `#00708E` (5.7:1) and the
+  brand teal is decorative only. The title gradient is dark behind the copy and
+  light behind the mascot. Every colour signal also has an icon or word.
+- **Fonts are loaded only on lesson pages** (`next/font/google` declared in the
+  player, not the root layout).
+- **Evidence, honestly sized.** Five live generations across grades 2 to 10 and
+  four subjects, 6 to 16 s each, no fix-level issues remaining, four on the first
+  attempt. Average sentence length in student text was 6.4 words at grade 2 and
+  11.9 at grade 10 (which also used real notation). 72 offline tests pass, including
+  retry behaviour against a mock model. This measures structure, not teaching
+  quality and not factual accuracy: no student has used it and no second model has
+  checked the content (a grade 10 strategy blurb was muddled).
+- **Not run locally:** `npm run test:integration` needs a Postgres instance and the
+  development machine had neither Postgres nor a running Docker engine. The router
+  and tables are unchanged apart from a widened TypeScript type, and CI runs that
+  suite.

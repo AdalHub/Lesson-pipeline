@@ -87,11 +87,16 @@ async function main() {
   console.log('  badges:', badges);
   assert.equal(badges.grade, '2nd grade');
   assert.equal(badges.teks, 'TEKS 2.4C');
-  console.log('  open <details> on load:', await page.locator('details[open]').count());
+  // New lessons are a slide deck. It opens on the title slide with nothing
+  // pre-expanded, advances one step at a time, and the big idea slide is
+  // interactive: tapping the action shows the result and a replay control.
+  await page.getByText('Step 1 of 7').first().waitFor();
   assert.equal(await page.locator('details[open]').count(), 0);
-  await page.getByText('Reveal answer').first().click();
-  assert.equal(await page.locator('details[open]').count(), 1);
-  console.log('  open <details> after click:', await page.locator('details[open]').count());
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByText('Step 2 of 7').first().waitFor();
+  await page.locator('section[aria-label="Big idea"] button').first().click();
+  await page.getByRole('button', { name: 'Start over' }).waitFor();
+  console.log('  lesson deck: title slide, next, big idea tapped, replay control shown');
 
   // 2. History
   console.log('2. history');
