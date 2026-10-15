@@ -1,15 +1,24 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/*
+ * Page palette. These match the lesson deck (the slide-* tokens below):
+ * blue is the deck's accessible teal, pink is the deck's mascot pink.
+ *   --signal          pink fill; text on it must be white (4.5:1)
+ *   --signal-soft     pink tint; dark text on it (12:1)
+ *   --signal-on-dark  pink that stays readable on the dark ink panels
+ */
 :root {
-  --background: #f3f4f6;
-  --foreground: #16181d;
-  --muted: #5d6470;
+  --background: #f7f8fa;
+  --foreground: #20223a;
+  --muted: #5a5c72;
   --card: #ffffff;
-  --border: #d7d9de;
-  --accent: #2457d6;
-  --accent-soft: #e9efff;
-  --signal: #ffd84d;
+  --border: #e8e6ef;
+  --accent: #00708e;
+  --accent-soft: #d5f1f7;
+  --signal: #de286e;
+  --signal-soft: #ffd9e8;
+  --signal-on-dark: #ff8fb8;
   --success: #2f6b4f;
   --success-soft: #e6f2eb;
   --danger: #a63f3f;
@@ -25,6 +34,8 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-signal-on-dark: var(--signal-on-dark);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
@@ -39,7 +50,7 @@ body {
 }
 
 ::selection {
-  background: var(--signal);
+  background: var(--signal-soft);
   color: var(--foreground);
 }
 

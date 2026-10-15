@@ -175,3 +175,19 @@ structure is in `LESSON_DESIGN.md`.
   development machine had neither Postgres nor a running Docker engine. The router
   and tables are unchanged apart from a widened TypeScript type, and CI runs that
   suite.
+
+## Milestone 14 — page palette matched to the lesson deck
+
+- **The page chrome no longer uses yellow.** The app's colours are CSS variables in
+  `globals.css`, so the change is mostly there: the accent blue is now the deck's
+  accessible teal (`#00708e`), and the yellow "signal" colour is the deck's pink
+  (`#de286e` fill, `#ffd9e8` tint, `#ff8fb8` on dark panels). Ink, muted text,
+  borders and the page background take the deck's ink, soft ink, line and surface.
+- **Where yellow carried dark text, the usage changed, not just the colour.** Pink
+  fills take white text (4.5:1); pink panels use the tint with dark text (12:1);
+  labels on the dark panels use the lighter pink (7.3:1). Success and danger colours
+  are unchanged because they carry meaning.
+- **Left alone:** the deck's own small yellow accents (star, comma highlight, accent
+  word on the title slide), which are part of the reference design.
+- **Not updated:** the three app artboards in the Paper file still show the old
+  palette; Paper's weekly MCP limit was exhausted when this was changed.

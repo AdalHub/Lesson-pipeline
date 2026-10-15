@@ -71,12 +71,12 @@ export default async function HistoryPage({
           </div>
           <ul className="divide-y divide-border">
             {items.map((item, index) => (
-              <li key={item.id} className={index === 0 ? 'bg-[#fffdf4]' : 'bg-card'}>
+              <li key={item.id} className={index === 0 ? 'bg-signal-soft/30' : 'bg-card'}>
                 <Link
                   href={`/lessons/${item.id}`}
                   className="grid min-h-[104px] gap-4 p-5 transition-colors hover:bg-accent-soft/40 lg:grid-cols-[72px_180px_1fr_145px_28px] lg:items-center lg:gap-5"
                 >
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-foreground text-sm font-extrabold ${index === 0 ? 'bg-signal' : 'bg-background'}`}>
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-foreground text-sm font-extrabold ${index === 0 ? 'bg-signal-soft' : 'bg-background'}`}>
                     {item.classification
                       ? String(item.classification.gradeLevel).padStart(2, '0')
                       : '—'}
@@ -117,7 +117,7 @@ export default async function HistoryPage({
         {nextCursor && (
           <Link
             href={`/lessons?cursor=${nextCursor}`}
-            className="rounded-lg border border-foreground bg-card px-5 py-3 text-sm font-bold text-foreground hover:bg-signal"
+            className="rounded-lg border border-foreground bg-card px-5 py-3 text-sm font-bold text-foreground hover:bg-signal-soft"
           >
             Load more
           </Link>

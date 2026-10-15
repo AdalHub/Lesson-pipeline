@@ -33,12 +33,12 @@ export function LegacyLessonView({ lesson }: { lesson: LegacyLesson }) {
       >
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-signal">Worked example</p>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-signal-on-dark">Worked example</p>
             <h2 className="mt-2 text-xl font-extrabold tracking-tight">
               {lesson.workedExample.problem}
             </h2>
           </div>
-          <span className="text-xs font-bold uppercase tracking-[0.08em] text-signal">
+          <span className="text-xs font-bold uppercase tracking-[0.08em] text-signal-on-dark">
             Follow the reasoning
           </span>
         </div>
@@ -57,7 +57,7 @@ export function LegacyLessonView({ lesson }: { lesson: LegacyLesson }) {
             </li>
           ))}
         </ol>
-        <div className="rounded-lg bg-signal px-5 py-4 text-foreground">
+        <div className="rounded-lg bg-signal-soft px-5 py-4 text-foreground">
           <p className="text-xs font-bold uppercase tracking-[0.08em]">Answer</p>
           <p className="mt-1 text-xl font-extrabold">{lesson.workedExample.answer}</p>
         </div>

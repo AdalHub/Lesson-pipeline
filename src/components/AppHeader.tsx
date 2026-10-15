@@ -11,7 +11,7 @@ export function AppHeader() {
     <header className="border-b-2 border-foreground bg-card">
       <nav className="mx-auto flex h-[74px] w-full max-w-[1180px] items-center justify-between px-5 sm:px-8 lg:px-0">
         <Link href="/" className="flex items-center gap-3 font-bold tracking-[-0.025em]">
-          <span className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border-2 border-foreground bg-signal text-sm font-extrabold">
+          <span className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border-2 border-foreground bg-signal text-sm font-extrabold text-white">
             LP
           </span>
           <span className="hidden text-lg sm:block">Lesson Pipeline</span>

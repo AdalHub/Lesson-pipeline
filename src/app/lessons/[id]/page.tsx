@@ -109,7 +109,7 @@ export default async function LessonPage({
             {lesson.content.objective}
           </p>
         </div>
-        <aside className="flex w-full flex-col justify-between gap-6 border-t-2 border-foreground bg-signal p-7 lg:w-[310px] lg:border-l-2 lg:border-t-0">
+        <aside className="flex w-full flex-col justify-between gap-6 border-t-2 border-foreground bg-signal-soft p-7 lg:w-[310px] lg:border-l-2 lg:border-t-0">
           <p className="text-xs font-bold uppercase tracking-[0.08em]">Classification</p>
           <div className="space-y-3">
             <p className="text-3xl font-extrabold tracking-[-0.03em]">
@@ -277,7 +277,7 @@ function OriginalQuestion({
 }) {
   return (
     <section className={`rounded-xl p-5 ${dark ? 'bg-foreground text-card' : 'border border-border bg-card'}`}>
-      <p className={`text-xs font-bold uppercase tracking-[0.08em] ${dark ? 'text-signal' : 'text-accent'}`}>
+      <p className={`text-xs font-bold uppercase tracking-[0.08em] ${dark ? 'text-signal-on-dark' : 'text-accent'}`}>
         Original question
       </p>
       {submission.inputType === 'image' && submission.imageUrl ? (

@@ -216,7 +216,7 @@ export function QuestionInput() {
                 : 'border-foreground bg-card hover:bg-background'
             }`}
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-foreground bg-signal">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-foreground bg-signal-soft">
               <svg
                 viewBox="0 0 24 24"
                 aria-hidden="true"
@@ -256,7 +256,7 @@ export function QuestionInput() {
             className="flex h-12 items-center gap-3 rounded-lg border-2 border-foreground bg-foreground px-5 text-sm font-bold text-card transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
           >
             {generate.isPending ? 'Working...' : 'Generate lesson'}
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-signal text-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-signal text-white">
               →
             </span>
           </button>

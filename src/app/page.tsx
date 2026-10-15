@@ -18,7 +18,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <aside className="w-full rounded-xl border-2 border-foreground bg-signal p-5 lg:w-[270px]">
+        <aside className="w-full rounded-xl border-2 border-foreground bg-signal-soft p-5 lg:w-[270px]">
           <p className="text-xs font-bold uppercase tracking-[0.08em]">
             Two focused passes
           </p>
