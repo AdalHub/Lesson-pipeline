@@ -170,7 +170,8 @@ summary {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slide-motion {
+  .slide-motion,
+  .mascot-float {
     transition: none !important;
     animation: none !important;
   }
@@ -188,4 +189,18 @@ summary {
 }
 .slide-enter {
   animation: slide-enter 280ms ease-out both;
+}
+
+/* The mascot bobs gently on the front page and while a lesson is generating. */
+@keyframes mascot-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3.2%);
+  }
+}
+.mascot-float {
+  animation: mascot-float 5s ease-in-out infinite;
 }

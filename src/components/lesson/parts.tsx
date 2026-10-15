@@ -81,6 +81,32 @@ const ICONS = {
       <path d="M3 21v-5h5" />
     </>
   ),
+  image: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </>
+  ),
+  cap: (
+    <>
+      <path d="M21.4 10.9a1 1 0 0 0 0-1.8L12.8 5.2a2 2 0 0 0-1.6 0L2.6 9.1a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0z" />
+      <path d="M22 10v6" />
+      <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -326,33 +352,49 @@ export function MascotArt({
   words,
   halo = true,
   className = '',
+  tone = 'deck',
+  float = false,
+  decorative = false,
 }: {
   words: string;
   halo?: boolean;
   className?: string;
+  /** "page" swaps the deck's yellow accents for white, for the app chrome. */
+  tone?: 'deck' | 'page';
+  /** Gentle bob on the mascot and bubble; off for reduced motion. */
+  float?: boolean;
+  /** Pure decoration: hidden from assistive technology. */
+  decorative?: boolean;
 }) {
   const id = useId();
   const body = `${id}-body`;
   const shadow = `${id}-shadow`;
+  const accent = tone === 'page' ? '#FFFFFF' : '#FFC93C';
+  const bob = float ? 'mascot-float' : '';
   return (
-    <div className={`@container relative aspect-[380/431] ${className}`}>
+    <div
+      aria-hidden={decorative ? true : undefined}
+      className={`@container relative aspect-[380/431] ${className}`}
+    >
       {halo && (
         <div className="absolute left-0 top-[11.8%] aspect-square w-full rounded-full bg-white/[0.18]" />
       )}
       <svg
         viewBox="0 0 24 24"
         aria-hidden="true"
-        className="absolute left-[2.4%] top-0 w-[12.1%] fill-slide-sun stroke-slide-sun"
+        className={`absolute left-[2.4%] top-0 w-[12.1%] ${
+          tone === 'page' ? 'fill-white stroke-white' : 'fill-slide-sun stroke-slide-sun'
+        }`}
         strokeWidth="1.5"
         strokeLinejoin="round"
       >
         <path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" />
       </svg>
 
-      <div className="absolute left-[24.9%] top-[23.4%] flex w-[70%] flex-col items-center">
+      <div className={`absolute left-[24.9%] top-[23.4%] flex w-[70%] flex-col items-center ${bob}`}>
         <p
           className="flex min-h-[17.4cqw] w-full items-center justify-center rounded-[5.8cqw] bg-paper px-[3cqw] text-center font-slide-display text-[6.9cqw] font-bold leading-[1.15] tracking-[0.05em] text-slide-teal-strong shadow-[0_2.6cqw_6.3cqw_rgba(0,60,80,0.2)]"
-          aria-label={`Key words: ${words}`}
+          aria-label={decorative ? undefined : `Key words: ${words}`}
         >
           {words}
         </p>
@@ -361,9 +403,9 @@ export function MascotArt({
 
       <svg
         viewBox="0 0 198 199"
-        role="img"
-        aria-label="A smiling mascot"
-        className="absolute left-[33.9%] top-[50.8%] w-[52.1%] overflow-visible"
+        role={decorative ? undefined : 'img'}
+        aria-label={decorative ? undefined : 'A smiling mascot'}
+        className={`absolute left-[33.9%] top-[50.8%] w-[52.1%] overflow-visible ${bob}`}
       >
         <defs>
           <linearGradient id={body} x1="0" y1="0" x2="0.35" y2="1">
@@ -386,7 +428,7 @@ export function MascotArt({
           strokeWidth="7"
           strokeLinecap="round"
         />
-        <g transform="translate(-46 56)" fill="none" stroke="#FFC93C" strokeWidth="7" strokeLinecap="round">
+        <g transform="translate(-46 56)" fill="none" stroke={accent} strokeWidth="7" strokeLinecap="round">
           <path d="M6 6c10 8 10 42 0 50" />
           <path d="M24 14c6 6 6 28 0 34" />
         </g>

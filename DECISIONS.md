@@ -191,3 +191,23 @@ structure is in `LESSON_DESIGN.md`.
   word on the title slide), which are part of the reference design.
 - **Not updated:** the three app artboards in the Paper file still show the old
   palette; Paper's weekly MCP limit was exhausted when this was changed.
+
+## Milestone 15 — front page refresh
+
+- **The front page now opens on the lesson mascot.** A hero in the deck's blue
+  gradient carries the mascot with a speech bubble, the same sparkles as the lesson
+  title slide, and the headline in the deck's display font. The question card
+  overlaps the bottom of the hero so the page reads as one piece.
+- **The mascot is shared, not redrawn.** The hero reuses the deck's `MascotArt`
+  with a `page` tone that swaps its yellow accents for white. A small `MascotFace`
+  is the header logo, the "nothing yet" state on History, and the thinking mascot
+  beside the progress steps while a lesson is generating.
+- **The call to action is pink with white text** (4.5:1), as in the deck. The
+  public-demo notice moved next to the submit button so it is read at the moment
+  of upload.
+- **"What the student gets" is generated from the deck definition** (`DECK_STEPS`),
+  so the front page cannot drift from the lesson that is actually produced.
+- **Motion respects the system setting.** The mascot bob is off under reduced motion.
+- **Not done in Paper.** The Paper file was not updated because its weekly MCP
+  limit was still exhausted; the page is built from the Paper tokens and the
+  mascot ported from the deck. The Paper app artboards need a refresh after reset.

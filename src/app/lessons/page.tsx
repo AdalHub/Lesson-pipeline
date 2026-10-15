@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { humanize } from '@/components/ClassificationBadge';
+import { MascotFace } from '@/components/Mascot';
 import { api } from '@/trpc/server';
 
 export const dynamic = 'force-dynamic';
@@ -55,6 +56,7 @@ export default async function HistoryPage({
 
       {items.length === 0 ? (
         <div className="rounded-2xl border-2 border-foreground bg-card p-10 text-center">
+          <MascotFace className="mx-auto mb-4 h-16 w-16" />
           <p className="text-sm text-muted">Nothing yet.</p>
           <Link href="/" className="mt-3 inline-block font-bold text-accent hover:underline">
             Generate your first lesson →

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/trpc/client';
+import { MascotFace } from './Mascot';
 
 /** Images above this size are downscaled client-side before upload. */
 const DOWNSCALE_ABOVE_BYTES = 1_500_000;
@@ -135,11 +136,8 @@ export function QuestionInput() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-6 text-muted">
-        Public demo: questions and lessons appear in shared History. Please do not upload personal or student information.
-      </p>
       <section
-        className={`overflow-hidden rounded-[18px] border-2 bg-card transition-colors ${
+        className={`overflow-hidden rounded-[22px] border-2 bg-card shadow-[0_26px_50px_-26px_rgba(32,34,58,0.45)] transition-colors ${
           dragOver ? 'border-accent bg-accent-soft/30' : 'border-foreground'
         }`}
         onDragOver={(e) => {
@@ -213,7 +211,7 @@ export function QuestionInput() {
             className={`flex min-h-[170px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-5 text-center transition disabled:opacity-50 ${
               dragOver
                 ? 'border-accent bg-accent-soft'
-                : 'border-foreground bg-card hover:bg-background'
+                : 'border-accent/60 bg-card hover:border-accent hover:bg-accent-soft/50'
             }`}
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full border border-foreground bg-signal-soft">
@@ -246,17 +244,35 @@ export function QuestionInput() {
         />
 
         <div className="flex flex-col items-start justify-between gap-4 border-t border-border bg-background px-5 py-4 sm:flex-row sm:items-center sm:px-6">
-          <p className="text-xs leading-5 text-muted">
-            Your input is saved before either AI step begins. Ctrl+Enter also submits.
-          </p>
+          <div className="space-y-1 text-xs leading-5 text-muted">
+            <p className="flex items-start gap-2 font-semibold text-foreground">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+              Public demo: questions and lessons appear in shared History. Please do not
+              upload personal or student information.
+            </p>
+            <p>Your input is saved before either AI step begins. Ctrl+Enter also submits.</p>
+          </div>
           <button
             type="button"
             onClick={submit}
             disabled={!canSubmit}
-            className="flex h-12 items-center gap-3 rounded-lg border-2 border-foreground bg-foreground px-5 text-sm font-bold text-card transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+            className="flex h-12 shrink-0 items-center gap-3 rounded-full bg-signal px-6 text-sm font-bold text-white shadow-[0_12px_24px_-10px_rgba(222,40,110,0.7)] transition hover:-translate-y-0.5 hover:brightness-95 focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:hover:translate-y-0"
           >
             {generate.isPending ? 'Working...' : 'Generate lesson'}
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-signal text-white">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/25 text-white">
               →
             </span>
           </button>
@@ -264,18 +280,21 @@ export function QuestionInput() {
       </section>
 
       {stage && (
-        <ol className="space-y-2 rounded-xl border border-foreground bg-card p-4 text-sm">
-          <StageRow
-            n={1}
-            label="Classifying against TEKS"
-            state={stage === 'classify' ? 'active' : 'done'}
-          />
-          <StageRow
-            n={2}
-            label="Writing the lesson for that grade level"
-            state={stage === 'generate' ? 'active' : 'pending'}
-          />
-        </ol>
+        <div className="flex items-center gap-4 rounded-2xl border-2 border-foreground bg-card p-4">
+          <MascotFace className="mascot-float h-14 w-14 drop-shadow-[0_8px_10px_rgba(222,40,110,0.3)]" />
+          <ol className="min-w-0 flex-1 space-y-2 text-sm">
+            <StageRow
+              n={1}
+              label="Classifying against TEKS"
+              state={stage === 'classify' ? 'active' : 'done'}
+            />
+            <StageRow
+              n={2}
+              label="Writing the lesson for that grade level"
+              state={stage === 'generate' ? 'active' : 'pending'}
+            />
+          </ol>
+        </div>
       )}
 
       {error && (
